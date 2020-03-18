@@ -1,8 +1,6 @@
-/DataFiles/
-/DataFiles_Archive_20190809/
-/DataFiles_Archive_20191129/
+**/timesteps_data/
+**/z0_mdf_data/
 /F19/data/
-**/DataFiles/
 **/DataFiles20190731/
 **/DataFiles2/
 **/DataFiles20190725/
