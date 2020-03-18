@@ -6,10 +6,17 @@ import matplotlib as mpl
 mpl.rcParams['font.family'] = 'sans-serif'
 mpl.rcParams['font.sans-serif'] = ['Tahoma','Lucida Grande','Verdana', 'DejaVu Sans']
 
+import socket
+if socket.gethostname() == "quirm.math.grinnell.edu":
+    z0data_prefix = '/home/akinshol/Data/Akins_Hollis_JL_Code/Data/z0_data/'
+else:
+    z0data_prefix = '/Users/hollis/Google Drive/Grinnell/MAP/Justice_League_Code/Data/z0_data/' # filepath is different on my local machine
+
+
 def read_file(simname):
     ### leave this section as is
     data = []
-    with open('/home/akinshol/Data/DataFiles/'+ simname + '.data', 'rb') as f:
+    with open(z0data_prefix + simname + '.data', 'rb') as f:
         while True:
             try:
                 data.append(pickle.load(f,encoding='latin1'))
