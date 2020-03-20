@@ -21,8 +21,7 @@ pynbody.config['halo-class-priority'] =  [pynbody.halo.ahf.AHFCatalogue,
                                           pynbody.halo.subfind.SubfindCatalogue, pynbody.halo.hop.HOPCatalogue]
 
 
-from timescales_bulk import bulk_processing
-
+from timescales_bulk import bulk_processing # import the bulk processing function
 
 snapshots = ['h148.cosmo50PLK.3072g3HbwK1BH.004096', 
              'h148.cosmo50PLK.3072g3HbwK1BH.003968', 
@@ -68,6 +67,7 @@ snapshots = ['h148.cosmo50PLK.3072g3HbwK1BH.004096',
              'h148.cosmo50PLK.3072g3HbwK1BH.000188', 
              'h148.cosmo50PLK.3072g3HbwK1BH.000139']
 
+### the below haloids and rvirs are updated to match the z=0 haloids in the 200 bkgdens simulations
 haloids = {
     1: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 10, 13, 40, 45, 54],
     2: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 5, 5, 5, 5, 6, 4, 5, 6, 18, 25, 33, 15, 19, 24],
@@ -124,9 +124,6 @@ haloids = {
     1024: [1025, 1067, 1103, 1128, 1161, 1165, 1216, 1254, 1301, 1304, 1364, 1381, 1424]
 }
 
-
-
-
 rvirs = {
     2: [162.58, 157.76, 153.02, 148.34, 144.52, 143.73, 139.18, 134.69, 129.08, 128.86, 123.1, 113.79, 105.92, 94.98, 89.34, 85.0, 80.5, 76.14, 73.07, 71.68, 67.13, 60.76, 54.29, 50.68, 47.01, 46.61, 42.32, 40.69, 37.81, 36.46, 34.43, 33.58, 29.61, 26.09, 24.73, 18.62, 14.95, 9.85, 8.05, 5.65, 4.66, 3.5, 2.07],
     3: [131.3, 127.41, 123.58, 119.8, 116.71, 116.08, 112.4, 108.77, 105.18, 105.04, 101.63, 98.11, 94.61, 91.15, 87.53, 83.72, 79.11, 75.04, 72.21, 70.82, 66.72, 60.99, 54.84, 51.43, 48.54, 48.2, 44.8, 43.19, 39.27, 34.43, 25.75, 25.2, 24.57, 21.89, 19.1, 14.47, 12.62, 10.43, 8.83, 6.83, 5.47, 4.61, 2.95],
@@ -182,8 +179,9 @@ rvirs = {
     1024: [79.64, 76.38, 73.75, 71.37, 69.33, 69.06, 66.12, 63.43, 61.28, 61.1, 58.49, 56.85, 54.02]
 }
 
+# simulation data is stored in Prof. Christensen's home directory
+name = 'h148'
 path= '/home/christenc/Data/Sims/h148.cosmo50PLK.3072g/h148.cosmo50PLK.3072g3HbwK1BH/snapshots_200bkgdens/'
-
 for key in list(haloids.keys()):
     if len(haloids[key]) != len(snapshots):
         for i in range(len(snapshots)-len(haloids[key])):
@@ -191,7 +189,9 @@ for key in list(haloids.keys()):
                         
 print(haloids)
 
-savepath = '/home/akinshol/Data/Timescales/DataFiles/h148.data'
+# relative path should work within github repo, change if running outside of repo
+savepath = f'../Data/timesteps_data/{name}.data' 
+
 if os.path.exists(savepath):
     os.remove(savepath)
     print('Removed previous .data file')

@@ -11,13 +11,8 @@ import logging
 from pynbody import array,filt,units,config,transformation
 from pynbody.analysis import halo
 
-# base filepath is a bit different on my machine vs on quirm
 # this path needs to point to the directory where .data files are stored
-import socket
-if socket.gethostname() == "quirm.math.grinnell.edu":
-    z0data_prefix = '/home/akinshol/Data/Akins_Hollis_JL_Code/Data/z0_data/'
-else:
-    z0data_prefix = '/Users/hollis/Google Drive/Grinnell/MAP/Justice_League_Code/Data/z0_data/' 
+z0data_prefix = '/home/akinshol/Data/Akins_Hollis_JL_Code/Data/z0_data/'
 
 
 
