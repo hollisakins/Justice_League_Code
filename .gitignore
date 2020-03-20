@@ -1,5 +1,5 @@
-**/timesteps_data/
-**/z0_mdf_data/
+/Data/timesteps_data/*.data
+/Data/z0_mdf_data/*.data
 /F19/data/
 **/DataFiles20190731/
 **/DataFiles2/
