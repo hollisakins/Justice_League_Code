@@ -98,9 +98,6 @@ def faceon(h, **kwargs):
 
 def bulk_processing(filepath,halo_nums, name):
         print('Running for simulation %s ' % filepath)
-        ZSOLAR = 0.0130215
-        XSOLO = 0.84E-2 #What pynbody uses
-        XSOLH = 0.706
 
         # first, load in the simulation and halos
         s = pynbody.load(filepath)
