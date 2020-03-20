@@ -348,7 +348,7 @@ def bulk_processing(tstep, haloids, rvirs, snapshots, path, savepath):
         pickle.dump({
                 'time': t, 
                 't':t,
-                'z':s.properties['z'],
+                'redshift':s.properties['z'],
                 'a':s.properties['a'],
                 'haloid': i,
                 'z0haloid':z0haloid,
