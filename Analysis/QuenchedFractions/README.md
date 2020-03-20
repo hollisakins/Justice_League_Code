@@ -2,7 +2,7 @@
 
 *Primary Notebook: `QuenchedFractions_F19.ipynb`*
 
-Note: the notebook *`QuenchedFractions.ipynb`* is out of date, but included in this folder because there is some interesting comparisons between the Justice League and Marvel simulations in there. For now it is left largely undocumented. 
+    Note: the notebook *`QuenchedFractions.ipynb`* is out of date, but included in this folder because there is some interesting comparisons between the Justice League and Marvel simulations in there. For now it is left largely undocumented. 
 
 ## Data Used
 

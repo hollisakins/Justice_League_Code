@@ -1,5 +1,5 @@
 import matplotlib as mpl
-mpl.use('Agg') # use a headless backend since this is meant to run outside of a notebook, on quirm
+mpl.use('Agg')
 import pynbody
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,19 +11,7 @@ import logging
 from pynbody import array,filt,units,config,transformation
 from pynbody.analysis import halo
 
-# base filepath is a bit different on my machine vs on quirm
-# this path needs to point to the directory where .data files are stored
-import socket
-if socket.gethostname() == "quirm.math.grinnell.edu":
-    z0data_prefix = '/home/akinshol/Data/Akins_Hollis_JL_Code/Data/z0_data/'
-else:
-    z0data_prefix = '/Users/hollis/Google Drive/Grinnell/MAP/Justice_League_Code/Data/z0_data/' 
-
-
-
-
 # set the config to prioritize the AHF catalog
-# otherwise it prioritizes AmgiaGrpCatalogue and you lose a lot of important info
 pynbody.config['halo-class-priority'] =  [pynbody.halo.ahf.AHFCatalogue,
                                           pynbody.halo.GrpCatalogue,
                                           pynbody.halo.AmigaGrpCatalogue,
@@ -31,11 +19,6 @@ pynbody.config['halo-class-priority'] =  [pynbody.halo.ahf.AHFCatalogue,
                                           pynbody.halo.rockstar.RockstarCatalogue,
                                           pynbody.halo.subfind.SubfindCatalogue, pynbody.halo.hop.HOPCatalogue]
 
-####################################################################################################################
-### codelock below is copied from the pynboady source code
-### set pynbody to center a halo based on its stars, not its gas 
-### ask Lucas Chamberland for more info as to why we did this
-####################################################################################################################
 
 logger = logging.getLogger('pynbody.analysis.angmom')
 
@@ -46,6 +29,7 @@ def ang_mom_vec(snap):
 def ang_mom_vec_units(snap):
     angmom = ang_mom_vec(snap)
     return array.SimArray(angmom, snap['mass'].units * snap['pos'].units * snap['vel'].units)
+
 def calc_sideon_matrix(angmom_vec):
     vec_in = np.asarray(angmom_vec)
     vec_in = vec_in / np.sum(vec_in ** 2).sum() ** 0.5
@@ -103,41 +87,49 @@ def sideon(h, vec_to_xform=calc_sideon_matrix, cen_size="1 kpc",
 def faceon(h, **kwargs):
     return sideon(h, calc_faceon_matrix, **kwargs)
 
-####################################################################################################################
-### end pynbody source code
-####################################################################################################################
 
-# primary function here is the bulk processing function, which takes in a filepath (to the raw simulation snapshot) and 
+
+# we define the operation as a function, which takes in filepath and halo nums as input
+# you should rename 'operation' to correspond to whatever it is doing
+# i.e. if it computes gas fraction you should change the line below to `def gasFrac(filepath,halo_nums):`
+
+# prop is going to be a string saying *what you are computing*, which will
+# go into the filename so make sure it doesnt have special characters
+
 def bulk_processing(filepath,halo_nums, name):
         print('Running for simulation %s ' % filepath)
-        # ZSOLAR = 0.0130215 
-        # XSOLO = 0.84E-2 #What pynbody uses
-        # XSOLH = 0.706
+        ZSOLAR = 0.0130215
+        XSOLO = 0.84E-2 #What pynbody uses
+        XSOLH = 0.706
 
-        # first, load in the simulation and halo catalog
+        # first, load in the simulation and halos
         s = pynbody.load(filepath)
         s.physical_units()
         h = s.halos()
 
-        # this is the #ID key which corresponds to the hostHalo property 
         id = []
         for i in halo_nums:
             id.append(h[i].properties['#ID'])
 
         print('Loaded simulation')
-        # then we open a new .data file, into which we will save the "pickled" data
-        with open(z0data_prefix+name+'.data','wb') as f:
+        # then we open the .data file
+        with open('/home/akinshol/Data/DataFiles/'+name+'.data','wb') as f:
                 # we loop through all the halos, compute a value for that halo, and add it to the .data file
                 X1 = h[1].properties['Xc']/s.properties['h']
                 Y1 = h[1].properties['Yc']/s.properties['h']
-                Z1 = h[1].properties['Zc']/s.properties['h'] # X,y,z coordinates in physical units
+                Z1 = h[1].properties['Zc']/s.properties['h']
 
                 for halo_num in halo_nums:
                         # we load the copy of the halo to minimize computational stress
                         halo = h.load_copy(halo_num)
                         halo.physical_units()
 
-                        # hostHalo property in order to determine which halo is the host of a satellite
+                        ###################################
+                        # here is where you compute your stuff
+                        # i.e. calculate the color, gas fraction, mass of each halo
+                        # so in this example we will just compute the stellar mass and the gas mass
+
+
                         hostHalo = h[halo_num].properties['hostHalo']
 
                         # Masses and Numbers of Particles
@@ -151,10 +143,10 @@ def bulk_processing(filepath,halo_nums, name):
 
                         print('Halo %s, %s particles' % (halo_num,npart))
 
-                        # Mean Temperature of Gas
+                        # Temperature of Gas
                         gas_temp = np.sum(halo.gas['temp']*halo.gas['mass'])/np.sum(halo.gas['mass'])
 
-                        # Morphology (work done by Lucas Chamberland)
+                        # Morphology
                         try:
                                 faceon(halo)
                                 hpmorph = pynbody.analysis.profile.Profile(halo.s,rmin=.0001,rmax=300,nbins=10000)
@@ -191,7 +183,7 @@ def bulk_processing(filepath,halo_nums, name):
 
                         print('\t Rvir %s' % Rvir)
 
-                        # Virial radius of host halo and distance to host halos
+                        #Virial radius of host halo and distance to host halos
                         id = np.array(id)
                         if hostHalo<np.min(id):
                             hostVirialR = None
@@ -206,9 +198,9 @@ def bulk_processing(filepath,halo_nums, name):
                                 hostVirialR = None
                                 hostDist = None
 
-                        # Gas Outflows (work done by Anna Engelhardt)
-                        # center on the halos
-                        if len(halo.gas)==0: # If there are no gas particles then the value is equal to zero for all these properties
+                        #Gas Outflows
+                        #center on the halos
+                        if len(halo.gas)==0:     #If there are no gas particles then the value is equal to zero for all these properties
                             goutflow15 = 0
                             goutflow25 = 0
                             ginflow15 = 0
@@ -219,7 +211,7 @@ def bulk_processing(filepath,halo_nums, name):
                             Gin_T = 0
                         else:
                             try:
-                                pynbody.analysis.halo.center(halo) # Centers the halo
+                                pynbody.analysis.halo.center(halo)     #Centers the halo
 
                                 #select the particles in a shell from 0.2 Rvir to 0.3 Rvir
                                 inner_sphere25 = pynbody.filt.Sphere(str(.2*Rvir) + ' kpc', [0,0,0])
@@ -331,7 +323,7 @@ def bulk_processing(filepath,halo_nums, name):
                                 Gout_T = np.sum(out_T)/np.sum(pm_out)
                                 Gin_T = np.sum(in_T)/np.sum(pm_in)
 
-                            except Exception as err: # If there are not enough particles to center the halo then we get Nan instead of an error
+                            except Exception as err:     #If there are not enough particles to center the halo then we get Nan instead of an error
                                 goutflow15 = None
                                 goutflow25 = None
                                 ginflow15 = None
@@ -352,21 +344,11 @@ def bulk_processing(filepath,halo_nums, name):
                         sSFR = sfr/mstar
 
                         print('\t SFR %s, sSFR %s ' % (sfr,sSFR))
-                        
                         # Stellar Metallicity [Fe/H]
                         try:
                                 zstar = np.sum(halo.star['feh'] * halo.star['mass'])/mstar
                         except ValueError:
                                 zstar = None
-
-                        # try: # see note in pickle.dump about why these are commented out
-                        #         stars_feh = np.array(halo.star['feh'],dtype=float)
-                        #         stars_mass = np.array(halo.star['mass'], dtype=float)
-                        #         stars_r = np.array(halo.star['r'],dtype=float)
-                        #         stars_oxh = np.array(halo.star['oxh'],dtype=float)
-                        #         stars_ofe = np.array(halo.star['ofe'],dtype=float)
-                        # except:
-                        #         stars_feh, stars_mass, stars_r, stars_oxh, stars_ofe = None, None, None, None, None
 
                         # Stellar Metallicity (simple)
                         zstar_simp = np.sum(halo.star['metals']*halo.star['mass'])/mstar
@@ -444,7 +426,7 @@ def bulk_processing(filepath,halo_nums, name):
                                 'Xc':Xc,
                                 'Yc':Yc,
                                 'Zc':Zc,
-                                'feh_avg': zstar,
+                                'feh': zstar,
                                 'zstar':zstar_simp,
                                 'zgas':zgas,
                 				'g_temp': gas_temp,
@@ -471,20 +453,14 @@ def bulk_processing(filepath,halo_nums, name):
                                 'c_a':c_a,
                                 'c':z90,
                                 'a':r90,
-                                # 'feh':stars_feh, # these metallicity calculations take up a lot of space...
-                                # 'oxh':stars_oxh, # they also don't work with the data currently available for 200b simulations
-                                # 'ofe':stars_ofe,
-                                # 'stars_mass':stars_mass,
-                                # 'stars_r':stars_r,
                                 'V90_Vdisp':V90_Vdisp,
                                 'hostVirialR':hostVirialR,
                                 'hostDist':hostDist
-            },f,protocol=2)   
+            },f,protocol=2)    #pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':
         # for ease of use I have the filepaths for all of the simulations here
-        # note that you must use the 200bkgdens simulaitons if you want these to match the timesteps data (which you do)
         h148 = '/home/akinshol/Data/Sims/h148_200bkgdens/h148.cosmo50PLK.3072g3HbwK1BH.004096'
         h229 = '/home/akinshol/Data/Sims/h229_200bkgdens/h229.cosmo50PLK.3072gst5HbwK1BH.004096'
         h242 = '/home/akinshol/Data/Sims/h242_200bkgdens/h242.cosmo50PLK.3072gst5HbwK1BH.004096'
@@ -509,9 +485,9 @@ if __name__ == '__main__':
         nums_storm = [124, 125, 169, 192, 208, 218, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 13, 14, 15, 16, 17, 23, 24, 28, 34, 35, 43, 47, 49, 50, 60, 109, 253, 292, 2423, 3127, 3738, 5779]
 
 
-        satsims = [h242,h148,h229,h329] # the order here just determines which one runs first
-        satnames = ['h242','h148','h229','h329'] # but must match these orders
-        satnums = [nums_h242,nums_h148,nums_h229,nums_h329]
+        satsims = [h329,h242,h148,h229]
+        satnames = ['h329','h242','h148','h229']
+        satnums = [nums_h329,nums_h242,nums_h148,nums_h229]
         fieldsims = [storm,cptmarvel,elektra,rogue]
         fieldnames = ['storm','cptmarvel','elektra','rogue']
         fieldnums = [nums_storm,nums_cptmarvel,nums_elektra,nums_rogue]
@@ -519,10 +495,9 @@ if __name__ == '__main__':
         nums = np.append(satnums,fieldnums)
         names = np.append(satnames,fieldnames)
 
-        for sim,num,name in zip(satsims,satnums,satnames): # for each *Justice League* simulation
-            bulk_processing(sim,num,name) # run the bulk_processing function above
+        # for sim,num,name in zip(satsims,satnums,satnames):
+        #     bulk_processing(sim,num,name)
 
-        # if you want to run bulk_processing on all eight simulations, comment out the lines above and uncomment the lines below
-        #for sim,num,name in zip(sims,nums,names):
-            #bulk_processing(sim,num,name)
+        for sim,num,name in zip(sims,nums,names):
+            bulk_processing(sim,num,name)
 
