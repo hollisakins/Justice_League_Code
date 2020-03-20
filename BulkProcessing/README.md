@@ -4,7 +4,7 @@ When analyzing simulations, one rapidly encounters a fundamental problem: the an
 
 So, to workaround this, we write code in `.py` scripts that reads in the *raw* simulation files and returns a compiled dataset of relevant satellite properties. That is, we calculate these properties *in bulk*. These scripts can take as much as 12-18 hours to run, depending on what they are doing (and how efficiently the code is written). 
 
-These bulk processing scripts produce the `.data` files that much of the analysis code uses. The `.data` extension is a convention used whenever we "pickle" data---that is, whenever we use the Python `pickle` module to store data. The `pickle` module is able to save Python objects to a file and reopen them without losing the same data format---you don't have to worry about whether the obeject was a list, array, SimArray, etc. 
+These bulk processing scripts produce the `.data` files that much of the analysis code uses. The `.data` extension is a convention used whenever we "pickle" data---that is, whenever we use the Python `pickle` module to store data. The `pickle` module is able to save Python objects to a file and reopen them without losing the same data format---you don't have to worry about whether the obeject was a list, array, SimArray, etc. For more information on how data is stored, see [Data](../Data/).
 
 The bulk processing scripts in this directory generate a few different sets of data:
 
