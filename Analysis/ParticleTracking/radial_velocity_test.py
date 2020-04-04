@@ -105,7 +105,7 @@ for sim, z0haloid, tinfall, tquench in zip(data.sim, data.haloid, data.tinfall, 
         v_r = np.dot(v_rel, r_rel)/h1dist # magnitude of radial velocity vector
         # if v_r is negative then the satellite is moving towards halo 1
 
-        theta = (180/np.pi)*np.arccos(np.sqrt(np.dot(v_rel,v_rel))/np.abs(v_r))
+        theta = (180/np.pi)*np.arccos(np.abs(v_r)/np.sqrt(np.dot(v_rel,v_rel)))
                 
         print(v_r, v_rel)
         print(theta)
