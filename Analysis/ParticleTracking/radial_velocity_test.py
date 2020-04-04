@@ -59,6 +59,7 @@ print(data)
 
 
 age = 13.800797497330507
+hubble =  0.6776942783267969
 
 
 for sim, z0haloid, tinfall, tquench in zip(data.sim, data.haloid, data.tinfall, data.tquench):
@@ -89,8 +90,24 @@ for sim, z0haloid, tinfall, tquench in zip(data.sim, data.haloid, data.tinfall, 
         host = h[haloids[1][i]]
         sat = h[haloids[z0haloid][i]]
 
-        print(sat.properties)
-        # sat_pos = np.array(sat.properties['X'])
+        sat_x, sat_y, sat_z = sat.properties['Xc']/hubble, sat.properties['Yc']/hubble, sat.properties['Zc']/hubble
+        host_x, host_y, host_z = host.properties['Xc']/hubble, host.properties['Yc']/hubble, host.properties['Zc']/hubble
+        r_sat = np.array(sat_x, sat_y, sat_z)
+        r_host = np.array(host_x, host_y, host_z)
+
+        v_sat = np.array(sat.properties['VXc'],sat.properties['VYc'],sat.properties['VZc'])
+        v_host = np.array(host.properties['VXc'],host.properties['VYc'],host.properties['VZc'])
+
+        v_rel = v_sat - v_host
+        r_rel = r_sat - r_host
+
+        h1dist = np.sqrt(np.dot(r_rel,r_rel))
+        v_r = np.dot(v_rel, r_rel)/h1dist # magnitude of radial velocity vector
+        # if v_r is negative then the satellite is moving towards halo 1
+
+        print(v_r)
+        print(h1dist)
+
 
 
         ### here would be where all the bridge stuff goes
