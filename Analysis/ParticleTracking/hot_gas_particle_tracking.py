@@ -61,9 +61,6 @@ haloids_h148 = {
     1024: [1025, 1067, 1103, 1128, 1161, 1165, 1216, 1254, 1301, 1304, 1364, 1381, 1424]
 }
 
-
-
-
 rvirs_h148 = {
     2: [162.58, 157.76, 153.02, 148.34, 144.52, 143.73, 139.18, 134.69, 129.08, 128.86, 123.1, 113.79, 105.92, 94.98, 89.34, 85.0, 80.5, 76.14, 73.07, 71.68, 67.13, 60.76, 54.29, 50.68, 47.01, 46.61, 42.32, 40.69, 37.81, 36.46, 34.43, 33.58, 29.61, 26.09, 24.73, 18.62, 14.95, 9.85, 8.05, 5.65, 4.66, 3.5, 2.07],
     3: [131.3, 127.41, 123.58, 119.8, 116.71, 116.08, 112.4, 108.77, 105.18, 105.04, 101.63, 98.11, 94.61, 91.15, 87.53, 83.72, 79.11, 75.04, 72.21, 70.82, 66.72, 60.99, 54.84, 51.43, 48.54, 48.2, 44.8, 43.19, 39.27, 34.43, 25.75, 25.2, 24.57, 21.89, 19.1, 14.47, 12.62, 10.43, 8.83, 6.83, 5.47, 4.61, 2.95],
@@ -118,7 +115,6 @@ rvirs_h148 = {
     1004: [74.27, 72.01, 69.88, 67.53, 65.99, 65.77, 63.17, 61.48, 59.54, 59.89, 57.74, 55.66, 53.33, 51.22, 48.3, 45.28],
     1024: [79.64, 76.38, 73.75, 71.37, 69.33, 69.06, 66.12, 63.43, 61.28, 61.1, 58.49, 56.85, 54.02]
 }
-
 
 snapnums_h229 = ['004096', '004032', '003936', '003840', '003744', '003648', '003606', '003552', '003456', '003360', '003264', '003195', '003168', '003072','002976', '002880', '002784', '002688', '002592', '002554', '002496', '002400', '002304','002208', '002112', '002088', '002016', '001920', '001824','001740','001728','001632', '001536', '001475', '001440', '001344', '001269', '001248','001152', '001106', '001056', '000974', '000960','000864', '000776', '000768', '000672', '000637', '000576', '000480', '000456', '000384', '000347', '000288', '000275', '000225', '000192', '000188', '000139', '000107', '000096', '000071']
 
@@ -178,7 +174,6 @@ rvirs_h229 = {
     290: [15.91, 15.67, 15.32, 14.97, 14.64, 14.34, 14.19, 13.94, 13.58, 13.3, 12.9, 12.64, 12.61, 12.19, 11.86, 11.51, 11.23, 10.84, 10.55, 10.43, 10.29, 10.09, 9.99, 9.84, 9.53, 9.44, 4.19, 9.75, 9.3, 8.93, 8.85, 8.42, 7.74, 7.45, 7.29, 6.91, 6.61, 6.51, 6.08, 5.9, 5.69, 5.38, 5.32, 5.06, 4.74, 4.69, 3.99, 3.82, 3.53, 2.96, 2.83, 2.44, 2.24, 1.88, 1.8, 1.51, 1.29, 1.26],
     549: [15.91, 15.67, 15.32, 14.97, 14.63, 14.29, 14.14]
 }
-
 
 snapnums_h242 = ['004096', '004032', '003936', '003840', '003744', '003648', '003606', '003552', '003456', '003360', '003264', '003195', '003168', '003072','002976', '002880', '002784', '002688', '002592', '002554', '002496', '002400', '002304','002208', '002112', '002088', '002016', '001920', '001824','001740','001728','001632', '001536', '001475', '001440', '001344', '001269', '001248','001152', '001106', '001056', '000974', '000960','000864', '000776', '000768', '000672', '000637', '000576', '000480', '000456', '000384', '000347', '000288', '000275', '000225', '000192', '000188', '000139', '000107', '000096', '000071']
 
@@ -259,7 +254,7 @@ rvirs_h329 = {
 def read_timescales():
     '''Function to read in the resulting data file which contains quenching and infall times'''
     data = []
-    with open('/home/akinshol/Data/Timescales/QuenchingTimescales_sSFR_F19.data', 'rb') as f:
+    with open('../../Data/QuenchingTimescales.data', 'rb') as f:
         while True:
             try:
                 data.append(pickle.load(f,encoding='latin1'))
@@ -275,18 +270,16 @@ data = data[(data.quenched==True)]
 data['timescale'] = data.tinfall - data.tquench
 data = data[data.timescale > 0]
 
-#data = data[(data.haloid == 55)|(data.haloid==22)|(data.haloid==41)]
-
+# there should be 22, as of April 2020
 print(f'Running for {len(data)} halos')
 print(data)
 
 
 age = 13.800797497330507
+hubble =  0.6776942783267969
 
-    
-    
 
-with open('/home/akinshol/Data/S20/HotGasTracking.data','wb') as outfile:
+with open('../../Data/stripping_data/HotGasTracking.data','wb') as outfile:
     for sim, z0haloid, tinfall, tquench in zip(data.sim, data.haloid, data.tinfall, data.tquench):
 
         if sim=='h148':
@@ -318,6 +311,32 @@ with open('/home/akinshol/Data/S20/HotGasTracking.data','wb') as outfile:
         #print(f'Running from snapshot {snapnums[i1]} to {snapnums[iend]}, or index {i1} to index {iend}')
 
         for i in np.flip(np.arange(iend, i1+1,1)):
+            # calculation of infall radial velocity and angle of impact
+            f = f_base + snapnums[i]
+            s = pynbody.load(f)
+            s.physical_units()
+            h = s.halos()
+
+            host = h[haloids[1][i]]
+            sat = h[haloids[z0haloid][i]]
+
+            sat_x, sat_y, sat_z = sat.properties['Xc']/hubble, sat.properties['Yc']/hubble, sat.properties['Zc']/hubble
+            host_x, host_y, host_z = host.properties['Xc']/hubble, host.properties['Yc']/hubble, host.properties['Zc']/hubble
+            r_sat = np.array([sat_x, sat_y, sat_z])
+            r_host = np.array([host_x, host_y, host_z])
+
+            v_sat = np.array([sat.properties['VXc'],sat.properties['VYc'],sat.properties['VZc']])
+            v_host = np.array([host.properties['VXc'],host.properties['VYc'],host.properties['VZc']])
+
+            v_rel = v_sat - v_host
+            r_rel = r_sat - r_host
+
+            h1dist = np.sqrt(np.dot(r_rel,r_rel))
+            v_r = np.dot(v_rel, r_rel)/h1dist # magnitude of radial velocity vector in km/s
+            # if v_r is negative then the satellite is moving towards halo 1
+            theta = (180/np.pi)*np.arccos(np.abs(v_r)/np.sqrt(np.dot(v_rel,v_rel))) # angle of impace in degrees
+            
+            # gas tracking, setup at infall
             if i==i1:
                 f = f_base + snapnums[i]
                 s = pynbody.load(f)
@@ -359,6 +378,7 @@ with open('/home/akinshol/Data/S20/HotGasTracking.data','wb') as outfile:
                 print(f'\t Gas stripped away: {frac_stripped*100:.2f}%')
                 print(f'\t Total: {(frac_hot+frac_disk+frac_stripped)*100:.2f}%')
 
+            # gas tracking, remaining snapshots
             else:
                 f = f_base + snapnums[i]
                 s = pynbody.load(f)
@@ -398,13 +418,16 @@ with open('/home/akinshol/Data/S20/HotGasTracking.data','wb') as outfile:
                 'tinfall':tinfall,
                 'tquench':tquench,
                 'tau':tinfall-tquench,
-                'snapnum': snapnums[i],
-                't': t, 
-                'gas_coolontime':coolontime,
-                'gas_mass':m,
-                'i': i, 
-                'frac_hot': frac_hot, 
-                'frac_disk': frac_disk,
-                'frac_stripped': frac_stripped,
-                'frac_stars': frac_stars
+                'snapnum': snapnums[i], 
+                't': t, # time
+                'gas_coolontime':coolontime, # gas particle times at which cooling will turn back on
+                'gas_mass':m, # gas particle masses
+                'i': i, # snapshot index
+                'frac_hot': frac_hot, # fraction hot
+                'frac_disk': frac_disk, # fraction in disk
+                'frac_stripped': frac_stripped, # fraction stripped
+                'frac_stars': frac_stars, # fraction formed stars
+                'h1dist': h1dist, # distance from halo 1
+                'v_r': v_r, # satellite radial velocity in km/s
+                'theta':theta # angle of impact in degrees
             }, outfile, protocol=2) 
