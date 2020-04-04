@@ -92,11 +92,11 @@ for sim, z0haloid, tinfall, tquench in zip(data.sim, data.haloid, data.tinfall, 
 
         sat_x, sat_y, sat_z = sat.properties['Xc']/hubble, sat.properties['Yc']/hubble, sat.properties['Zc']/hubble
         host_x, host_y, host_z = host.properties['Xc']/hubble, host.properties['Yc']/hubble, host.properties['Zc']/hubble
-        r_sat = np.array(sat_x, sat_y, sat_z)
-        r_host = np.array(host_x, host_y, host_z)
+        r_sat = np.array([sat_x, sat_y, sat_z])
+        r_host = np.array([host_x, host_y, host_z])
 
-        v_sat = np.array(sat.properties['VXc'],sat.properties['VYc'],sat.properties['VZc'])
-        v_host = np.array(host.properties['VXc'],host.properties['VYc'],host.properties['VZc'])
+        v_sat = np.array([sat.properties['VXc'],sat.properties['VYc'],sat.properties['VZc']])
+        v_host = np.array(]host.properties['VXc'],host.properties['VYc'],host.properties['VZc']])
 
         v_rel = v_sat - v_host
         r_rel = r_sat - r_host
