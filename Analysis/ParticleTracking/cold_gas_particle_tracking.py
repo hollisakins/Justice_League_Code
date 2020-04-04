@@ -259,7 +259,7 @@ rvirs_h329 = {
 def read_timescales():
     '''Function to read in the resulting data file which contains quenching and infall times'''
     data = []
-    with open('/home/akinshol/Data/Timescales/QuenchingTimescales_sSFR_F19.data', 'rb') as f:
+    with open('../../Data/QuenchingTimescales.data', 'rb') as f:
         while True:
             try:
                 data.append(pickle.load(f,encoding='latin1'))
@@ -275,8 +275,7 @@ data = data[(data.quenched==True)]
 data['timescale'] = data.tinfall - data.tquench
 data = data[data.timescale > 0]
 
-#data = data[(data.haloid == 55)|(data.haloid==22)|(data.haloid==41)]
-
+# there should be 22, as of April 2020
 print(f'Running for {len(data)} halos')
 print(data)
 
@@ -285,7 +284,7 @@ age = 13.800797497330507
     
     
 
-with open('/home/akinshol/Data/S20/ColdGasTracking.data','wb') as outfile:
+with open('../../Data/stripping_data/ColdGasTracking.data','wb') as outfile:
     for sim, z0haloid, tinfall, tquench in zip(data.sim, data.haloid, data.tinfall, data.tquench):
 
         if sim=='h148':
