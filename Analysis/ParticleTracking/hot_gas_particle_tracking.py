@@ -429,5 +429,5 @@ with open('../../Data/stripping_data/HotGasTracking.data','wb') as outfile:
                 'frac_stars': frac_stars, # fraction formed stars
                 'h1dist': h1dist, # distance from halo 1
                 'v_r': v_r, # satellite radial velocity in km/s
-                'theta':theta # angle of impact in degrees
+                'theta':theta # angle of impact in degreesm
             }, outfile, protocol=2) 
