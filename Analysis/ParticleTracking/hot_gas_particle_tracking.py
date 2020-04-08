@@ -338,7 +338,7 @@ with open('../../Data/stripping_data/HotGasTracking.data','wb') as outfile:
             
             # get ram pressure info
             pynbody.analysis.angmom.faceon(host)
-            gas_density_profile = pynbody.analysis.profile.Profile(s.g, min=0.01, max=5*rvirs[1][i], ndim=3) # make spherical gas density profile
+            gas_density_profile = pynbody.analysis.profile.Profile(s.g, min=0.01, max=5*host.properties['Rvir']/hubble, ndim=3) # make spherical gas density profile
     
             rbins = gas_density_profile['rbins']
             density = gas_density_profile['density']
