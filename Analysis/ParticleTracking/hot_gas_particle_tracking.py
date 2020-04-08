@@ -336,6 +336,54 @@ with open('../../Data/stripping_data/HotGasTracking.data','wb') as outfile:
             # if v_r is negative then the satellite is moving towards halo 1
             theta = (180/np.pi)*np.arccos(np.abs(v_r)/np.sqrt(np.dot(v_rel,v_rel))) # angle of impace in degrees
             
+            # get ram pressure info
+            pynbody.analysis.angmom.faceon(host)
+            gas_density_profile = pynbody.analysis.profile.Profile(s.g, min=0.01, max=5*rvirs[1][i], ndim=3) # make spherical gas density profile
+    
+            rbins = gas_density_profile['rbins']
+            density = gas_density_profile['density']
+
+            gas_density_local = density[np.argmin(abs(rbins-h1dist))]
+            P_ram = gas_density_local * np.dot(v_rel,v_rel)
+            print('\t Ram pressure %.2e Msol kpc^-3 km^2 s^-2' % P_ram)
+
+            try:
+                pynbody.analysis.angmom.faceon(sat)
+                calc_rest = True
+                if len(sat.gas) < 30:
+                    raise Exception
+            except:
+                print('\t Not enough gas (%s), skipping restoring force calculation' % len(sat.gas))
+                calc_rest = False
+            
+            # calculate restoring force pressure
+            if not calc_rest:
+                P_rest = None
+                ratio = None
+            else:
+                print('\t # of gas particles:',len(sat.g))
+                try:
+                    # methodology here is that of Simpson et al 2018
+                    p = pynbody.analysis.profile.Profile(sat.g,min=.01,max=rvirs[z0haloid][i])
+                    print('\t Made gas density profile for satellite halo')
+                    Mgas = np.sum(sat.g['mass'])
+                    percent_enc = p['mass_enc']/Mgas
+
+                    rhalf = np.min(p['rbins'][percent_enc > 0.5])
+                    SigmaGas = Mgas / (2*np.pi*rhalf**2)
+
+                    dphidz = sat.properties['Vmax']**2 / (sat.properties['Rmax']/hubble)
+                    P_rest = dphidz * SigmaGas
+
+                    print('\t Restoring pressure %.2e Msol kpc^-3 km^2 s^-2' % P_rest)
+                    ratio = P_ram/P_rest
+                    print(f'\t P_ram / P_rest {ratio:.2f}')
+                except:
+                    print('\t ! Error in calculating restoring force...')
+                    P_rest = None
+
+
+                
             # gas tracking, setup at infall
             if i==i1:
                 f = f_base + snapnums[i]
@@ -429,5 +477,9 @@ with open('../../Data/stripping_data/HotGasTracking.data','wb') as outfile:
                 'frac_stars': frac_stars, # fraction formed stars
                 'h1dist': h1dist, # distance from halo 1
                 'v_r': v_r, # satellite radial velocity in km/s
-                'theta':theta # angle of impact in degreesm
+                'theta':theta, # angle of impact in degreesm
+                'v_rel':v_rel, # relative (vector) velocity between sat and host, in km/s
+                'P_ram':P_ram, # ram pressure rho * v_rel**2
+                'P_rest':P_rest, # restoring pressure as in Simpson et al 2018
+                'ratio':ratio
             }, outfile, protocol=2) 
