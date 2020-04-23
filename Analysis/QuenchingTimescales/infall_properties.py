@@ -178,13 +178,13 @@ hubble =  0.6776942783267969
 with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfile:
     for sim in list(data.sim):
         if sim=='h148':
-            snapnums, haloids, rvirs = snapnums_h148, haloids_h148, rvirs_h148
+            snapnums, haloids = snapnums_h148, haloids_h148
         if sim=='h229':
-            snapnums, haloids, rvirs = snapnums_h229, haloids_h229, rvirs_h229
+            snapnums, haloids = snapnums_h229, haloids_h229
         if sim=='h242':
-            snapnums, haloids, rvirs = snapnums_h242, haloids_h242, rvirs_h242
+            snapnums, haloids = snapnums_h242, haloids_h242
         if sim=='h329':
-            snapnums, haloids, rvirs = snapnums_h329, haloids_h329, rvirs_h329
+            snapnums, haloids = snapnums_h329, haloids_h329
 
         f_base = f'/home/christenc/Data/Sims/{sim}.cosmo50PLK.3072g/{sim}.cosmo50PLK.3072gst5HbwK1BH/snapshots_200bkgdens/{sim}.cosmo50PLK.3072gst5HbwK1BH.'
         if sim=='h148':
