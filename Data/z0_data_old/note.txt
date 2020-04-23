@@ -1,0 +1,5 @@
+These data files are "old" in that they don't have the SDSS r-band magnitudes calculated from Elaad's table. 
+They are just archived in case something goes wrong with re-running bulk processing to get the new M_r mags, 
+since I haven't done that in a while. 
+
+-- Hollis, Apr 22 2020

@@ -378,6 +378,14 @@ def bulk_processing(filepath,halo_nums, name):
                         U_mag = pynbody.analysis.luminosity.halo_mag(halo.star,band='u')
                         R_mag = pynbody.analysis.luminosity.halo_mag(halo.star,band='r')
                         I_mag = pynbody.analysis.luminosity.halo_mag(halo.star,band='i')
+                        
+                        for band in ['u','g','r','i','z']:
+                            halo.star['sdss_'+band+'_mag'] = pynbody.analysis.luminosity.calc_mags(halo.star, 
+                                                                                                  band='sdss_'+band,
+                                                                                                  cmd_path='cmd.sdss_ugriz.npz')
+                        
+                        r_mag = pynbody.analysis.luminosity.halo_mag(halo.star,band='sdss_r')
+                        print(f'\t M_v = {V_mag:.2f}, M_r = {r_mag:.2f}')
 
                         print('\t Vmag %s, Bmag %s' % (V_mag,B_mag))
                         # gas fractions
@@ -448,6 +456,7 @@ def bulk_processing(filepath,halo_nums, name):
                                 'U_mag':U_mag,
                                 'R_mag':R_mag,
                                 'I_mag':I_mag,
+                                'r_mag':r_mag,
                                 'gasfrac':GasFrac,
                                 'mHI':mHI,
                                 'HIgasfrac':HIGasFrac,
