@@ -176,7 +176,7 @@ hubble =  0.6776942783267969
 
 
 with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfile:
-    for sim in list(data.sim):
+    for sim in ['h329','h242','h229','h148']:
         if sim=='h148':
             snapnums, haloids = snapnums_h148, haloids_h148
         if sim=='h229':
@@ -199,7 +199,7 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
 
 
         print(f'Beginning sim {sim}')
-        for haloid in list(data[data.sim==sim].haloid):
+        for haloid in list(np.unique(data[data.sim==sim].haloid)):
             d = data[(data.sim==sim)&(data.haloid==haloid)]
             timesteps = read_timesteps(sim)
             timesteps = timesteps[timesteps.z0haloid==haloid]
