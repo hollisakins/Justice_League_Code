@@ -32,11 +32,11 @@ def read_file(simname):
     
 def read_sat():
     '''Function that returns a combined pandas dataframe for all Justice League simulations.'''
-	data = read_file('h148')
-	data = data.append(read_file('h229'))
-	data = data.append(read_file('h242'))
-	data = data.append(read_file('h329'))
-	return data
+    data = read_file('h148')
+    data = data.append(read_file('h229'))
+    data = data.append(read_file('h242'))
+    data = data.append(read_file('h329'))
+    return data
 
 def read_field():
     '''Function that returns a combined pandas dataframe for all Marvel simulations.'''
