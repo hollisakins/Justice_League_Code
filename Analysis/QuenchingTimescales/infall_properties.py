@@ -198,9 +198,8 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
             lbts = np.append(lbts,lbt)
 
 
-        haloids = list(data[data.sim==sim].haloid)
         print(f'Beginning sim {sim}')
-        for haloid in haloids:
+        for haloid in list(data[data.sim==sim].haloid):
             d = data[(data.sim==sim)&(data.haloid==haloid)]
             timesteps = read_timesteps(sim)
             timesteps = timesteps[timesteps.z0haloid==haloid]
