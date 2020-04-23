@@ -239,6 +239,7 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
             v_rel = v_sat - v_host
             r_rel = r_sat - r_host
             v_rel_mag = np.sqrt(np.dot(v_rel,v_rel))
+            h1dist = np.sqrt(np.dot(r_rel,r_rel))
             print(f'\t Relative velocity = {v_rel_mag:.2f} km/s')
 
             v_r = np.dot(v_rel, r_rel)/h1dist # magnitude of radial velocity vector in km/s
