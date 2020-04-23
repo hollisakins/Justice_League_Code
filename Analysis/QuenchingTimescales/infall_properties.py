@@ -166,7 +166,6 @@ def read_timesteps(simname):
 
 ### SELECT WHICH HALOS YOU WANT TO GET DATA FOR
 data = read_timescales()
-data = data[(data.quenched==True)]
 data = data[(~np.isnan(np.array(data.tinfall,dtype=float)))&(data.n_star > 50)]
 
 print(f'Running for {len(data)} halos')
