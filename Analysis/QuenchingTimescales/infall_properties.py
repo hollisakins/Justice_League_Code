@@ -224,9 +224,9 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
             h = s.halos()
 
             host = h[haloids[1][i]]
-            sat = h[haloids[z0haloid][i]]
+            sat = h[haloids[haloid][i]]
 
-            print(f'Loaded halo {z0haloid}, tinfall = {tinfall:.2f} Gyr ago')
+            print(f'Loaded halo {haloid}, tinfall = {tinfall:.2f} Gyr ago')
 
             sat_x, sat_y, sat_z = sat.properties['Xc']/hubble, sat.properties['Yc']/hubble, sat.properties['Zc']/hubble
             host_x, host_y, host_z = host.properties['Xc']/hubble, host.properties['Yc']/hubble, host.properties['Zc']/hubble
