@@ -25,8 +25,6 @@ Justice_League_Code/
 │       │   ...
 │   
 └───BulkProcessing/
-│   │   file021.txt
-│   │   file022.txt
 │   │   ...
 │
 └───Data/
