@@ -214,6 +214,9 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
             n_star = d.n_star.tolist()[0]
             z0_M_star = d.M_star.tolist()[0]
             is_quenched = np.array(d.quenched,dtype=bool)[0]
+            
+            Pram = d.Pram.tolist()[0]
+            Prest = d.Prest.tolist()[0]
 
 
             i = np.argmin(np.abs(lbts-tinfall)) # infall snapshot index
@@ -280,6 +283,8 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
                 'v_r':v_r,
                 'v_rel':v_rel_mag,
                 'v_max':Vmax, 
-                'r_peri':R_peri                
+                'r_peri':R_peri,
+                'Pram':Pram,
+                'Prest':Prest
             }, outfile, protocol=2)
 
