@@ -175,7 +175,7 @@ hubble =  0.6776942783267969
 
 
 with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfile:
-    for sim in ['h329','h242','h229','h148']:
+    for sim in ['h148','h329','h242','h229']:
         if sim=='h148':
             snapnums, haloids = snapnums_h148, haloids_h148
         if sim=='h229':
@@ -198,6 +198,7 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
 
 
         print(f'Beginning sim {sim}')
+
         for haloid in list(np.unique(data[data.sim==sim].haloid)):
             d = data[(data.sim==sim)&(data.haloid==haloid)]
             timesteps = read_timesteps(sim)
@@ -215,10 +216,6 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
             z0_M_star = d.M_star.tolist()[0]
             is_quenched = np.array(d.quenched,dtype=bool)[0]
             
-            Pram = timesteps.Pram.tolist()[0]
-            Prest = timesteps.Prest.tolist()[0]
-
-
             i = np.argmin(np.abs(lbts-tinfall)) # infall snapshot index
             f = f_base + snapnums[i] # infall snapshot filepath
             s = pynbody.load(f) # load in the snapshot at infall
@@ -229,6 +226,7 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
             sat = h[haloids[haloid][i]]
 
             print(f'Loaded halo {haloid}, tinfall = {tinfall:.2f} Gyr ago')
+            print(haloids[haloid][i], f)
 
             sat_x, sat_y, sat_z = sat.properties['Xc']/hubble, sat.properties['Yc']/hubble, sat.properties['Zc']/hubble
             host_x, host_y, host_z = host.properties['Xc']/hubble, host.properties['Yc']/hubble, host.properties['Zc']/hubble
@@ -262,8 +260,19 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
             R_peri = np.min(np.array(timesteps.h1dist_kpc,dtype=float))
             print(f'\t Pericentric distance = {R_peri:.2f} kpc')
 
+            pynbody.analysis.angmom.faceon(host)
+            pg = pynbody.analysis.profile.Profile(s.g, min=0.01, max=2*h1dist, ndim=3)
+            rbins = pg['rbins']
+            density = pg['density']
+
+            rho_cgm = density[np.argmin(np.abs(rbins-h1dist))]
+            Pram = rho_cgm * np.sum(v_rel**2)
+            print(f'\t Pram = {Pram:.1e}')
+
             pickle.dump({
                 'sim':sim,
+                'snap':f,
+                'haloid_snap':haloids[haloid][i],
                 'haloid':haloid,
                 'quenched': is_quenched,
                 'tquench':tquench,
@@ -285,6 +294,6 @@ with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfil
                 'v_max':Vmax, 
                 'r_peri':R_peri,
                 'Pram':Pram,
-                'Prest':Prest
+                'rho_cgm':rho_cgm
             }, outfile, protocol=2)
 
