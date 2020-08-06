@@ -143,7 +143,9 @@ def vec_to_xform(vec):
 sims = ['h329', 'h148', 'h148']
 
 labels = ['D', 'E', 'F']
-masses = ['7.8','8.0','8.7']
+#masses = ['7.8','8.0','8.7']
+masses = [r'$1.1\times 10^6$',r'$2.1\times 10^6$',r'$1.5\times 10^8$']
+
 
 simnames = [l +' (' + m + ')' for l,m in zip(labels,masses)]
 
@@ -254,5 +256,5 @@ cax = plt.subplot(gs[-1])
 cbar = fig.colorbar(im, cax=cax, label=r'Gas Density [$\mathrm{M}_\odot~\mathrm{kpc}^{-3}$]')
 cbar.ax.minorticks_on()
     
-fig.savefig('ram_pressure_images.pdf',dpi=300)
+fig.savefig('ram_pressure_images_z0mstar.pdf',dpi=300)
 plt.close()
