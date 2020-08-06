@@ -123,9 +123,9 @@ haloids_h329 = {
 
 
 
-fig = plt.figure(dpi=150,figsize=(7.5,2.8))
+fig = plt.figure(dpi=150,figsize=(8,2.5))
 gs = mpl.gridspec.GridSpec(1,4, width_ratios=[1,1,1,0.07], figure=fig)
-gs.update(wspace=0.05, left=0.01, right=0.92, bottom=0.01, top=0.85)
+gs.update(wspace=0.05, left=0.01, right=0.92, bottom=0.01, top=0.94)
 axes = np.array([plt.subplot(gs[i]) for i in range(3)])
 
 
@@ -141,7 +141,13 @@ def vec_to_xform(vec):
 
 
 sims = ['h329', 'h148', 'h148']
-simnames = [r'D: $1.1\times 10^6$', r'E: $2.1\times 10^6$', r'F: $1.5\times 10^8$']
+
+labels = [r'D: ', 'E: ', 'F: ']
+masses = ['7.8','8.0','8.7']
+
+simnames = [l +r'$\log M_{\mathrm{gas}}/\mathrm{M}_{\odot} =$ ' + m for l,m in zip(labels,masses)]
+
+#simnames = [r'D: $1.1\times 10^6$', r'E: $2.1\times 10^6$', r'F: $1.5\times 10^8$']
 z0haloids = [33, 278, 9]
 tinfalls = [5.3873, 6.8957, 4.741]
 
@@ -223,7 +229,7 @@ for sim, z0haloid, tinfall,simname in zip(sims, z0haloids, tinfalls,simnames):
                                     vector_color='cyan', vector_resolution = 15, av_z='rho', ret_im=True, denoise=False, approximate_fast=False, subplot=ax, show_cbar=False, quiverkey=False)
     
 
-    #ax.tick_params(labelleft=False, labelbottom=False, left=False, bottom=False)
+    ax.tick_params(labelleft=False, labelbottom=False, left=False, bottom=False)
     mstar = halo.properties['M_star']
 
     #ax.annotate(simname,(0.05,0.9), xycoords='axes fraction', va='center', ha='left', color='w', bbox=dict(boxstyle='round', color='0.2'), fontsize=10)
@@ -232,14 +238,15 @@ for sim, z0haloid, tinfall,simname in zip(sims, z0haloids, tinfalls,simnames):
 
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
     if z0haloid==33:
-        size = 10
+        size = 15
     elif z0haloid==278:
-        size = 10
+        size = 15
     elif z0haloid==9:
-        size = 20
+        size = 30
 
     bar = AnchoredSizeBar(ax.transData, size, str(size)+' kpc', loc='lower right', bbox_to_anchor=(1.,1.),bbox_transform=ax.transAxes, color='k', frameon=False)
     ax.add_artist(bar)
+
     #ax.annotate(f'{sim}-{z0haloid}', (0.04, 0.04), xycoords='axes fraction', va='bottom', ha='left', color='w')
 
 #axes[0].set_ylabel(r'$y$ [kpc]')
