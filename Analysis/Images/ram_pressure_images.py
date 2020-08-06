@@ -123,9 +123,9 @@ haloids_h329 = {
 
 
 
-fig = plt.figure(dpi=150,figsize=(8,2.5))
+fig = plt.figure(dpi=150,figsize=(8.5,2.5))
 gs = mpl.gridspec.GridSpec(1,4, width_ratios=[1,1,1,0.07], figure=fig)
-gs.update(wspace=0.05, left=0.01, right=0.92, bottom=0.01, top=0.94)
+gs.update(wspace=0.05, left=0.01, right=0.92, bottom=0.01, top=0.91)
 axes = np.array([plt.subplot(gs[i]) for i in range(3)])
 
 
@@ -142,10 +142,10 @@ def vec_to_xform(vec):
 
 sims = ['h329', 'h148', 'h148']
 
-labels = [r'D: ', 'E: ', 'F: ']
+labels = ['D', 'E', 'F']
 masses = ['7.8','8.0','8.7']
 
-simnames = [l +r'$\log M_{\mathrm{gas}}/\mathrm{M}_{\odot} =$ ' + m for l,m in zip(labels,masses)]
+simnames = [l +' (' + m + ')' for l,m in zip(labels,masses)]
 
 #simnames = [r'D: $1.1\times 10^6$', r'E: $2.1\times 10^6$', r'F: $1.5\times 10^8$']
 z0haloids = [33, 278, 9]
