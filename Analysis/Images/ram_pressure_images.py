@@ -123,9 +123,9 @@ haloids_h329 = {
 
 
 
-fig = plt.figure(dpi=150,figsize=(7,2.1), constrained_layout=True)
+fig = plt.figure(dpi=150,figsize=(7.5,2.8))
 gs = mpl.gridspec.GridSpec(1,4, width_ratios=[1,1,1,0.07], figure=fig)
-gs.update(wspace=0.1)
+gs.update(wspace=0.05, left=0.01, right=0.92, bottom=0.01, top=0.85)
 axes = np.array([plt.subplot(gs[i]) for i in range(3)])
 
 
@@ -227,12 +227,22 @@ for sim, z0haloid, tinfall,simname in zip(sims, z0haloids, tinfalls,simnames):
     mstar = halo.properties['M_star']
 
     ax.annotate(simname,(0.05,0.9), xycoords='axes fraction', va='center', ha='left', color='w', bbox=dict(boxstyle='round', color='0.2'), fontsize=10)
-    ax.set_xlabel(r'$x$ [kpc]')
-    
-    
+    #ax.set_xlabel(r'$x$ [kpc]')
+    ax.set_title(simname, loc='left')
+
+    from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+    if z0haloid==33:
+        size = 10
+    elif z0haloid==278:
+        size = 10
+    elif z0haloid==9:
+        size = 20
+
+    bar = AnchoredSizeBar(ax.transData, size, str(size)+' kpc', loc='lower right', bbox_to_anchor=(0.,1.), color='k')
+    ax.add_artist(bar)
     #ax.annotate(f'{sim}-{z0haloid}', (0.04, 0.04), xycoords='axes fraction', va='bottom', ha='left', color='w')
 
-axes[0].set_ylabel(r'$y$ [kpc]')
+#axes[0].set_ylabel(r'$y$ [kpc]')
 cax = plt.subplot(gs[-1])
 cbar = fig.colorbar(im, cax=cax, label=r'Gas Density [$\mathrm{M}_\odot~\mathrm{kpc}^{-3}$]')
 cbar.ax.minorticks_on()
