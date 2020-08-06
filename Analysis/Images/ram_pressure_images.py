@@ -226,7 +226,7 @@ for sim, z0haloid, tinfall,simname in zip(sims, z0haloids, tinfalls,simnames):
     #ax.tick_params(labelleft=False, labelbottom=False, left=False, bottom=False)
     mstar = halo.properties['M_star']
 
-    ax.annotate(simname,(0.05,0.9), xycoords='axes fraction', va='center', ha='left', color='w', bbox=dict(boxstyle='round', color='0.2'), fontsize=10)
+    #ax.annotate(simname,(0.05,0.9), xycoords='axes fraction', va='center', ha='left', color='w', bbox=dict(boxstyle='round', color='0.2'), fontsize=10)
     #ax.set_xlabel(r'$x$ [kpc]')
     ax.set_title(simname, loc='left')
 
@@ -238,7 +238,7 @@ for sim, z0haloid, tinfall,simname in zip(sims, z0haloids, tinfalls,simnames):
     elif z0haloid==9:
         size = 20
 
-    bar = AnchoredSizeBar(ax.transData, size, str(size)+' kpc', loc='lower right', bbox_to_anchor=(0.,1.), color='k')
+    bar = AnchoredSizeBar(ax.transData, size, str(size)+' kpc', loc='lower right', bbox_to_anchor=(1.,1.),bbox_transform=ax.transAxes, color='k', frameon=False)
     ax.add_artist(bar)
     #ax.annotate(f'{sim}-{z0haloid}', (0.04, 0.04), xycoords='axes fraction', va='bottom', ha='left', color='w')
 
