@@ -36,10 +36,10 @@ def read_file(simname):
 
 
     
-fig = plt.figure(dpi=300, figsize=(7.5, 5.7))
+fig = plt.figure(dpi=300, figsize=(7.5, 5.6))
 
 gs = mpl.gridspec.GridSpec(3,3, height_ratios=[1,1,0.05], figure=fig)
-gs.update(hspace=0.05, wspace=0.05, right=0.99, top=0.99, left=0.01, bottom=0.08)
+gs.update(hspace=0.035, wspace=0.05, right=0.99, top=0.99, left=0.01, bottom=0.08)
 
 # top row, Sonia, bottom row, Sandra
 
