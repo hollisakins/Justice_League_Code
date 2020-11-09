@@ -1,5 +1,7 @@
 # Particle Tracking
 
+> Important Note: As of 11/8/2020 this code will not be updated. Further analysis using particle tracking will be done in `Analysis/RamPressure`
+
 *Notebook: `ParticleTracking.ipynb`.*
 
 The code in this notebook is really just a proof of concept for the particle tracking code that ended up in `.py` scripts. 
