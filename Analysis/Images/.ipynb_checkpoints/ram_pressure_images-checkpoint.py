@@ -1,7 +1,23 @@
+import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
+import matplotlib.colors as colors
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+
+import matplotlib.cm as cm
+import matplotlib as mpl
 import pynbody
-import pickle
+import math
 import numpy as np
-import pandas as pd
+import socket
+from bulk import *
+import copy
+
+# we set the global matplotlib parameters so the fonts are all consistent and serif 
+mpl.rc('font',**{'family':'serif','monospace':['Palatino']})
+mpl.rc('text', usetex=True)
+mpl.rcParams.update({'font.size': 9})
+
 
 snapnums_h148 = ['004096', '003968', '003840', '003712', '003606', '003584', '003456', '003328', '003200', '003195', '003072', '002944', '002816', '002688', '002554', '002432', '002304', '002176', '002088', '002048', '001920', '001740', '001536', '001408', '001280', '001269', '001152', '001106', '001024', '000974', '000896', '000866', '000768', '000701', '000640', '000512', '000456', '000384', '000347', '000275', '000225', '000188', '000139']
 
@@ -62,40 +78,6 @@ haloids_h148 = {
 }
 
 
-snapnums_h229 = ['004096', '004032', '003936', '003840', '003744', '003648', '003606', '003552', '003456', '003360', '003264', '003195', '003168', '003072','002976', '002880', '002784', '002688', '002592', '002554', '002496', '002400', '002304','002208', '002112', '002088', '002016', '001920', '001824','001740','001728','001632', '001536', '001475', '001440', '001344', '001269', '001248','001152', '001106', '001056', '000974', '000960','000864', '000776', '000768', '000672', '000637', '000576', '000480', '000456', '000384', '000347', '000288', '000275', '000225', '000192', '000188', '000139', '000107', '000096', '000071']
-
-# haloids dictionary defines the major progenitor branch back through all snapshots for each z=0 halo we are 
-# interest in ... read this as haloids[1] is the list containing the haloid of the major progenitors of halo 1
-# so if we have three snapshots, snapshots = [4096, 2048, 1024] then we would have haloids[1] = [1, 2, 5] 
-# --- i.e. in snapshot 2048 halo 1 was actually called halo 2, and in 1024 it was called halo 5
-haloids_h229 = {
-    1: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 13, 16],
-    2: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 5, 5, 5, 5, 4, 4, 4, 4, 3, 4, 4, 5, 5, 7, 15, 20, 23, 24, 23, 24, 48, 87],
-    5: [5, 5, 6, 6, 6, 5, 5, 5, 5, 6, 4, 4, 4, 4, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 7, 7, 8, 10, 10, 10, 10, 9, 8, 10, 10, 14, 15, 15, 16, 18, 15, 19, 25, 25, 23, 32, 36, 29, 82],
-    7: [7, 7, 7, 7, 8, 7, 6, 6, 7, 7, 7, 6, 6, 6, 7, 6, 7, 8, 8, 8, 7, 6, 6, 8, 8, 8, 8, 8, 7, 8, 8, 9, 9, 10, 11, 11, 11, 12, 12, 12, 12, 11, 12, 12, 21, 20, 24, 24, 28, 35, 38, 53, 59, 77, 87, 217, 234, 231],
-    17: [17, 17, 16, 18, 18, 17, 17, 18, 19, 19, 20, 19, 20, 21, 23, 22, 25, 24, 24, 25, 23, 23, 26, 26, 26, 26, 28, 28, 28, 30, 30, 30, 30, 29, 29, 32, 38, 43, 42, 44, 41, 42, 43, 40, 42, 43, 57, 62, 68, 71, 77, 80, 81, 86, 93, 128, 149, 153, 198],
-    20: [20, 19, 17, 17, 17, 15, 15, 15, 15, 15, 15, 15, 15, 14, 16, 13, 14, 14, 14, 15, 15, 13, 14, 13, 14, 14, 13, 13, 14, 13, 13, 13, 13, 13, 14, 15, 18, 19, 30, 30, 30, 33, 34, 42, 44, 45, 53, 53, 54, 55, 58, 70, 72, 71, 69, 63, 61, 63, 43, 36, 36, 25],
-    22: [22, 22, 22, 22, 22, 21, 20, 21, 21, 21, 21, 20, 19, 18, 20, 18, 17, 16, 16, 14, 10, 10, 10, 11, 10, 10, 10, 10, 9, 9, 9, 8, 7, 7, 8, 9, 9, 10, 9, 9, 8, 8, 8, 9, 9, 8, 9, 9, 10, 9, 10, 9, 6, 17, 20, 20, 21, 22, 20, 40, 40],
-    23: [23, 23, 23, 23, 23, 22, 23, 22, 23, 24, 25, 23, 23, 25, 26, 23, 22, 22, 21, 19, 19, 17, 17, 16, 16, 15, 15, 15, 15, 14, 14, 14, 14, 14, 15, 19, 22, 23, 25, 26, 27, 27, 28, 28, 32, 33, 37, 35, 43, 56, 56, 56, 61, 70, 86, 106, 135, 137, 182],
-    27: [27, 27, 28, 28, 29, 30, 31, 31, 30, 30, 29, 30, 30, 30, 32, 32, 32, 31, 29, 30, 30, 26, 25, 25, 31, 27, 21, 20, 20, 20, 20, 20, 21, 20, 21, 21, 20, 21, 21, 21, 21, 22, 23, 23, 25, 23, 19, 20, 22, 26, 32, 33, 30, 36, 34, 60, 60, 61, 109],
-    29: [29, 29, 30, 30, 32, 32, 33, 33, 32, 33, 33, 34, 34, 36, 38, 38, 39, 37, 37, 37, 37, 38, 38, 37, 36, 36, 38, 37, 37, 41, 41, 36, 34, 36, 36, 35, 35, 38, 37, 36, 36, 38, 40, 37, 39, 40, 47, 46, 50, 52, 55, 60, 64, 61, 62, 57, 49, 48, 40, 26, 20, 12],
-    33: [33, 34, 34, 32, 34, 34, 21, 17, 17, 16, 16, 16, 16, 17, 19, 19, 21, 21, 22, 22, 22, 21, 22, 22, 22, 21, 22, 21, 21, 19, 19, 18, 19, 21, 25, 17, 16, 17, 19, 19, 19, 19, 20, 21, 22, 21, 21, 21, 23, 23, 26, 29, 28, 30, 31, 27, 26, 26, 17, 14, 12, 8],
-    52: [52, 52, 51, 51, 51, 50, 50, 49, 48, 47, 47, 46, 45, 48, 50, 46, 45, 46, 48, 46, 44, 42, 41, 42, 38, 38, 39, 38, 38, 39, 38, 38, 36, 38, 39, 38, 39, 41, 40, 39, 38, 41, 42, 41, 43, 44, 52, 52, 56, 59, 60, 63, 62, 56, 56, 75, 68, 69, 33, 28, 46],
-    53: [53, 54, 54, 69, 53, 52, 51, 50, 49, 48, 48, 47, 46, 47, 48, 47, 46, 47, 46, 44, 42, 40, 39, 41, 40, 39, 36, 31, 27, 28, 28, 26, 25, 26, 27, 27, 27, 28, 28, 28, 24, 24, 25, 69, 56, 56, 62, 63, 64, 82, 88, 95, 106, 279, 291, 277, 253, 245, 190],
-    55: [55, 53, 52, 50, 49, 45, 44, 42, 39, 37, 35, 36, 36, 34, 33, 30, 24, 20, 18, 18, 18, 19, 20, 18, 17, 17, 17, 17, 16, 16, 16, 15, 15, 15, 17, 16, 15, 16, 18, 18, 18, 18, 18, 17, 20, 19, 18, 19, 21, 19, 22, 28, 96, 109, 108, 353],
-    59: [59, 60, 58, 57, 59, 60, 61, 61, 60, 59, 58, 58, 57, 59, 60, 58, 61, 62, 64, 64, 64, 64, 65, 64, 65, 66, 65, 66, 64, 65, 63, 62, 57, 56, 56, 47, 44, 47, 46, 46, 52, 57, 59, 60, 67, 69, 72, 74, 81, 77, 83, 91, 98, 90, 92, 110, 359, 356],
-    61: [61, 61, 62, 63, 64, 64, 64, 65, 65, 64, 66, 67, 65, 66, 67, 65, 67, 66, 67, 65, 67, 67, 66, 65, 66, 67, 70, 69, 71, 71, 71, 73, 76, 76, 76, 77, 81, 81, 81, 78, 80, 81, 84, 92, 100, 100, 109, 110, 111, 106, 120, 138, 170, 178, 181, 174, 145, 144, 118, 85, 70],
-    62: [62, 62, 63, 62, 61, 59, 58, 58, 59, 57, 57, 55, 67, 41, 40, 39, 40, 39, 41, 40, 40, 41, 43, 46, 46, 47, 49, 48, 49, 51, 51, 53, 55, 53, 55, 53, 56, 56, 58, 61, 61, 69, 68, 77, 80, 81, 95, 102, 96, 92, 96, 115, 123, 189, 195, 171, 147, 148, 121, 104],
-    73: [73, 72, 70, 71, 71, 68, 68, 68, 70, 66, 67, 63, 62, 65, 30, 27, 29, 28, 28, 29, 28, 30, 30, 28, 28, 29, 30, 30, 29, 31, 31, 28, 26, 25, 26, 26, 25, 26, 27, 27, 25, 25, 26, 26, 29, 28, 29, 29, 32, 37, 37, 41, 36, 38, 38, 44, 40, 39, 36, 103],
-    104: [104, 106, 105, 107, 105, 105, 107, 109, 106, 102, 105, 105, 105, 106, 102, 98, 94, 87, 88, 86, 84, 84, 83, 81, 82, 81, 83, 82, 82, 82, 82, 80, 81, 80, 79, 74, 73, 73, 64, 66, 63, 58, 55, 49, 54, 54, 68, 70, 74, 72, 79, 90, 99, 110, 113, 105, 126, 128, 185],
-    113: [113, 111, 104, 96, 87, 82, 78, 78, 77, 75, 77, 77, 75, 74, 73, 70, 60, 53, 52, 50, 50, 50, 40, 40, 37, 37, 40, 39, 39, 40, 37, 37, 35, 33, 32, 37, 29, 31, 26, 25, 26, 26, 27, 27, 31, 31, 34, 32, 39, 41, 41, 42, 34, 37, 36, 54, 87, 90],
-    139: [139, 140, 137, 136, 137, 136, 137, 135, 134, 129, 135, 120, 111, 102, 100, 100, 102, 99, 101, 99, 98, 99, 99, 101, 103, 104, 105, 109, 102, 103, 103, 105, 104, 101, 104, 103, 106, 109, 111, 109, 112, 111, 113, 116, 121, 122, 125, 126, 131, 127, 132, 147, 155, 148, 130, 123, 202, 207, 155],
-    212: [212, 212, 208, 200, 186, 178, 175, 171, 159, 85, 79, 80, 79, 81, 80, 77, 77, 73, 69, 66, 66, 65, 48, 35, 34, 34, 35, 35, 33, 35, 35, 32, 32, 31, 35, 29, 31, 34, 35, 35, 35, 37, 38, 34, 36, 36, 45, 41, 49, 49, 50, 49, 45, 58, 61, 89, 76, 76, 56, 53, 55],
-    290: [290, 288, 287, 287, 284, 284, 286, 290, 295, 297, 306, 307, 310, 314, 313, 315, 322, 325, 328, 323, 318, 307, 287, 276, 281, 281, 345, 219, 222, 228, 229, 238, 261, 258, 267, 268, 269, 274, 281, 279, 283, 275, 278, 263, 251, 253, 294, 296, 301, 314, 321, 326, 330, 334, 329, 339, 343, 345],
-    549: [549, 548, 537, 550, 522, 511, 501]
-}
-
-
 snapnums_h242 = ['004096', '004032', '003936', '003840', '003744', '003648', '003606', '003552', '003456', '003360', '003264', '003195', '003168', '003072','002976', '002880', '002784', '002688', '002592', '002554', '002496', '002400', '002304','002208', '002112', '002088', '002016', '001920', '001824','001740','001728','001632', '001536', '001475', '001440', '001344', '001269', '001248','001152', '001106', '001056', '000974', '000960','000864', '000776', '000768', '000672', '000637', '000576', '000480', '000456', '000384', '000347', '000288', '000275', '000225', '000192', '000188', '000139', '000107', '000096', '000071']
 
 haloids_h242 = {
@@ -119,8 +101,6 @@ haloids_h242 = {
     439: [439, 441, 439, 442, 439, 432, 431, 430, 416, 401, 379, 367, 366, 341, 318, 283, 223, 176, 174, 170, 174, 173, 176, 178, 174, 173, 174, 176, 176, 176, 175, 168, 158, 141, 136, 122, 89, 78, 65, 63, 60, 53, 52, 43, 31, 31, 22, 22, 23, 27, 27, 26, 26, 30, 30, 31, 34, 36, 74],
     480: [480, 481, 466, 463, 462, 461, 459, 456, 460, 470, 467, 469, 472, 468, 472, 471, 460, 450, 437, 432, 425, 419, 415, 408, 409, 405, 408, 405, 405, 413, 411, 410, 404, 399, 393, 393, 368, 368, 356, 351, 342, 321, 320, 294, 224, 215, 118, 104, 89, 62, 57, 51, 54, 55, 54, 52, 49, 47, 37, 38, 42]
 }
-
-
 snapnums_h329 = ['004096', '004032', '003936', '003840', '003744', '003648', '003606', '003552', '003456', '003360', '003264', '003195', '003168', '003072','002976', '002880', '002784', '002688', '002592', '002554', '002496', '002400', '002304','002208', '002112', '002088', '002016', '001920', '001824','001740','001728','001632', '001536', '001475', '001440', '001344', '001269', '001248','001152', '001106', '001056', '000974', '000960','000864', '000776', '000768', '000672', '000637', '000576', '000480', '000456', '000384', '000347', '000288', '000275', '000225', '000192', '000188', '000139', '000107', '000096', '000071']
 
 haloids_h329 = {
@@ -138,178 +118,124 @@ haloids_h329 = {
     447: [447, 438, 429, 409, 381, 359, 549, 434, 230, 191, 213]
 }
 
-def read_timescales():
-    '''Function to read in the resulting data file which contains quenching and infall times'''
-    data = []
-    with open('../../Data/QuenchingTimescales.data', 'rb') as f:
-        while True:
-            try:
-                data.append(pickle.load(f,encoding='latin1'))
-            except EOFError:
-                break
 
-    data = pd.DataFrame(data)
-    return data
 
-def read_timesteps(simname):
-    '''Function to read in the timestep bulk-processing datafile (from /home/akinhol/Data/Timescales/DataFiles/{name}.data)'''
-    data = []
-    with open(f'../../Data/timesteps_data/{simname}.data','rb') as f:
-        while True:
-            try: 
-                data.append(pickle.load(f))
-            except EOFError:
-                break
-    
-    data = pd.DataFrame(data)
-    return data
 
-### SELECT WHICH HALOS YOU WANT TO GET DATA FOR
-data = read_timescales()
-data = data[(~np.isnan(np.array(data.tinfall,dtype=float)))&(data.n_star > 50)]
 
-print(f'Running for {len(data)} halos')
+
+fig = plt.figure(dpi=150,figsize=(7,2.1), constrained_layout=True)
+gs = mpl.gridspec.GridSpec(1,4, width_ratios=[1,1,1,0.07], figure=fig)
+gs.update(wspace=0.1)
+axes = np.array([plt.subplot(gs[i]) for i in range(3)])
+
+
+def vec_to_xform(vec):
+    vec_in = np.asarray(vec)
+    vec_in = vec_in / np.sum(vec_in ** 2).sum() ** 0.5
+    vec_p1 = np.cross([1, 0, 0], vec_in)
+    vec_p1 = vec_p1 / np.sum(vec_p1 ** 2).sum() ** 0.5
+    vec_p2 = np.cross(vec_in, vec_p1)
+    matr = np.concatenate((vec_p2, vec_in, vec_p1)).reshape((3, 3))
+    return matr
+
+
+
+sims = ['h329', 'h148', 'h148']
+simnames = [r'D: $1.1\times 10^6$', r'E: $2.1\times 10^6$', r'F: $1.5\times 10^8$']
+z0haloids = [33, 278, 9]
+tinfalls = [5.3873, 6.8957, 4.741]
+
 
 age = 13.800797497330507
 hubble =  0.6776942783267969
 
+fig_i = 0
 
-with open('../../Data/QuenchingTimescales_InfallProperties.data','wb') as outfile:
-    for sim in ['h329','h148','h242','h229']:
-        if sim=='h148':
-            snapnums, haloids = snapnums_h148, haloids_h148
-        if sim=='h229':
-            snapnums, haloids = snapnums_h229, haloids_h229
-        if sim=='h242':
-            snapnums, haloids = snapnums_h242, haloids_h242
-        if sim=='h329':
-            snapnums, haloids = snapnums_h329, haloids_h329
+for sim, z0haloid, tinfall,simname in zip(sims, z0haloids, tinfalls,simnames):
+    ax = axes[fig_i]
+    fig_i += 1
 
-        f_base = f'/home/christenc/Data/Sims/{sim}.cosmo50PLK.3072g/{sim}.cosmo50PLK.3072gst5HbwK1BH/snapshots_200bkgdens/{sim}.cosmo50PLK.3072gst5HbwK1BH.'
-        if sim=='h148':
-            f_base = '/home/christenc/Data/Sims/h148.cosmo50PLK.3072g/h148.cosmo50PLK.3072g3HbwK1BH/snapshots_200bkgdens/h148.cosmo50PLK.3072g3HbwK1BH.'
+    print(f'starting {sim}-{z0haloid}')
+    
+    if sim=='h148':
+        snapnums, haloids = snapnums_h148, haloids_h148
+    if sim=='h329':
+        snapnums, haloids = snapnums_h329, haloids_h329
+    if sim=='h242':
+        snapnums, haloids = snapnums_h242, haloids_h242
 
-        lbts = np.array([])
-        for i, snapnum in enumerate(snapnums):
-            f = f_base + snapnums[i]
-            s = pynbody.load(f)
-            lbt = age - s.properties['time'].in_units('Gyr')
-            lbts = np.append(lbts,lbt)
+    f_base = f'/home/christenc/Data/Sims/{sim}.cosmo50PLK.3072g/{sim}.cosmo50PLK.3072gst5HbwK1BH/snapshots_200bkgdens/{sim}.cosmo50PLK.3072gst5HbwK1BH.'
+    if sim=='h148':
+        f_base = '/home/christenc/Data/Sims/h148.cosmo50PLK.3072g/h148.cosmo50PLK.3072g3HbwK1BH/snapshots_200bkgdens/h148.cosmo50PLK.3072g3HbwK1BH.'
 
+    lbts = np.array([])
+    for i, snapnum in enumerate(snapnums):
+        f = f_base + snapnums[i]
+        s = pynbody.load(f)
+        lbt = age - s.properties['time'].in_units('Gyr')
+        lbts = np.append(lbts,lbt)
+        
+    
+    i = np.argmin(np.abs(lbts-tinfall))
+    haloid = haloids[z0haloid][i]    
 
-        print(f'Beginning sim {sim}')
+    i = np.argmin(np.abs(lbts-tinfall)) # infall snapshot index
+    f = f_base + snapnums[i] # infall snapshot filepath
+    print(f)
+    
+    print('Loading snap')
+    s = pynbody.load(f)
+    s.physical_units()
+    print('Loaded snap, making halo catalog')
+    h = s.halos()
+    halo = h[haloid]
+    host = h[1] # may not always be halo 1! (but probably is)
+    print('Made halo catalog')
+        
+    # below code adapted from pynbody.analysis.angmom.sideon()
+    top = s
+    print('Centering positions')
+    cen = pynbody.analysis.halo.center(halo, retcen=True)
+    tx = pynbody.transformation.inverse_translate(top, cen)
+    print('Centering velocities')
+    vcen = pynbody.analysis.halo.vel_center(halo, retcen=True) 
+    tx = pynbody.transformation.inverse_v_translate(tx, vcen)
 
-        for haloid in list(np.unique(data[data.sim==sim].haloid)):
-            d = data[(data.sim==sim)&(data.haloid==haloid)]
-            timesteps = read_timesteps(sim)
-            timesteps = timesteps[timesteps.z0haloid==haloid]
-            
-            tinfall = d.tinfall.tolist()[0]
-            tinfall_lower = d.tinfall_lower.tolist()[0]
-            tinfall_upper = d.tinfall_upper.tolist()[0]
+    print('Getting velocity vector') # may want to get only from inner 10 kpc
+    vel = np.average(halo.g['vel'], axis=0, weights=halo.g['mass'])
+    vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass'])
+    vel -= vel_host
+    
+    print('Transforming snapshot')
+    trans = vec_to_xform(vel)
+    tx = pynbody.transformation.transform(tx, trans)
+    
 
-            tquench = d.tquench.tolist()[0]
-            tquench_lower = d.tquench_lower.tolist()[0]
-            tquench_upper = d.tquench_upper.tolist()[0]
+    Rvir = halo.properties['Rvir']/hubble
+    
+    smin, smax = -int(Rvir*0.4), int(Rvir*0.4)
+        
+    gas_vmin, gas_vmax = 6e2, 3e5
+    
+    # make image
+    print('Making gas image')    
+    im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str((smax-smin)))], width='%s kpc' % str(smax-smin), cmap='viridis', vmin=gas_vmin, vmax=gas_vmax,
+                                    vector_color='cyan', vector_resolution = 15, av_z='rho', ret_im=True, denoise=False, approximate_fast=False, subplot=ax, show_cbar=False, quiverkey=False)
+    
 
-            n_star = d.n_star.tolist()[0]
-            z0_M_star = d.M_star.tolist()[0]
-            is_quenched = np.array(d.quenched,dtype=bool)[0]
-            
-            i = np.argmin(np.abs(lbts-tinfall)) # infall snapshot index
-            f = f_base + snapnums[i] # infall snapshot filepath
-            s = pynbody.load(f) # load in the snapshot at infall
-            s.physical_units()
-            h = s.halos()
+    #ax.tick_params(labelleft=False, labelbottom=False, left=False, bottom=False)
+    mstar = halo.properties['M_star']
 
-            host = h[haloids[1][i]]
-            sat = h[haloids[haloid][i]]
+    ax.annotate(simname,(0.05,0.9), xycoords='axes fraction', va='center', ha='left', color='w', bbox=dict(boxstyle='round', color='0.2'), fontsize=10)
+    ax.set_xlabel(r'$x$ [kpc]')
+    
+    
+    #ax.annotate(f'{sim}-{z0haloid}', (0.04, 0.04), xycoords='axes fraction', va='bottom', ha='left', color='w')
 
-            print(f'Loaded halo {haloid}, tinfall = {tinfall:.2f} Gyr ago')
-            print(haloids[haloid][i], f)
-
-            sat_x, sat_y, sat_z = sat.properties['Xc']/hubble, sat.properties['Yc']/hubble, sat.properties['Zc']/hubble
-            host_x, host_y, host_z = host.properties['Xc']/hubble, host.properties['Yc']/hubble, host.properties['Zc']/hubble
-            r_sat = np.array([sat_x, sat_y, sat_z])
-            r_host = np.array([host_x, host_y, host_z])
-
-            v_sat = np.array([sat.properties['VXc'],sat.properties['VYc'],sat.properties['VZc']])
-            v_host = np.array([host.properties['VXc'],host.properties['VYc'],host.properties['VZc']])
-
-            v_rel = v_sat - v_host
-            r_rel = r_sat - r_host
-            v_rel_mag = np.sqrt(np.dot(v_rel,v_rel))
-            h1dist = np.sqrt(np.dot(r_rel,r_rel))
-            print(f'\t Relative velocity = {v_rel_mag:.2f} km/s')
-
-            v_r = np.dot(v_rel, r_rel)/h1dist # magnitude of radial velocity vector in km/s
-            theta = (180/np.pi)*np.arccos(np.abs(v_r)/np.sqrt(np.dot(v_rel,v_rel))) # angle of impact in degrees
-            print(f'\t Impact angle = {theta:.2f} degrees')
-
-            Vmax = sat.properties['Vmax']
-            Rmax = sat.properties['Rmax']
-            print(f'\t Max circular velocity = {Vmax:.2f} km/s')
-
-            M_star = np.sum(sat.s['mass'].in_units('Msol'))
-            M_gas = np.sum(sat.g['mass'].in_units('Msol'))
-            M_halo = np.sum(sat.dm['mass'].in_units('Msol'))
-            M_vir = M_star + M_gas + M_halo
-
-            M_HI = np.sum(sat.gas['HI']*sat.gas['mass'].in_units('Msol'))
-            print(f'\t HI mass = {M_HI:.2e} Msol')
-            
-            R_peri = np.min(np.array(timesteps.h1dist_kpc,dtype=float))
-            print(f'\t Pericentric distance = {R_peri:.2f} kpc')
-
-            pynbody.analysis.angmom.faceon(host)
-            pg = pynbody.analysis.profile.Profile(s.g, min=0.01, max=2*h1dist, ndim=3)
-            rbins = pg['rbins']
-            density = pg['density']
-
-            rho_cgm = density[np.argmin(np.abs(rbins-h1dist))]
-            Pram = rho_cgm * np.sum(v_rel**2)
-            print(f'\t Pram = {Pram:.1e}')
-            
-            
-            pynbody.analysis.angmom.faceon(sat)
-            rvir = sat.properties['Rvir']/hubble
-            p = pynbody.analysis.profile.Profile(s.g, min=0.01, max=rvir)
-            percent_enc = p['mass_enc']/M_gas
-            rhalf = np.min(p['rbins'][percent_enc > 0.5])
-            SigmaGas = M_gas / (2*np.pi*rhalf**2)
-            dphidz = Vmax**2 / Rmax
-            Prest = dphidz * SigmaGas
-            print(f'\t Prest = {Prest:.1e}')
-            
-            
-            
-
-            pickle.dump({
-                'sim':sim,
-                'snap':f,
-                'haloid_snap':haloids[haloid][i],
-                'haloid':haloid,
-                'quenched': is_quenched,
-                'tquench':tquench,
-                'tquench_lower': tquench_lower,
-                'tquench_upper': tquench_upper,
-                'tinfall':tinfall,
-                'tinfall_lower': tinfall_lower,
-                'tinfall_upper': tinfall_upper,
-                'z0_M_star': z0_M_star,
-                'n_star': n_star, 
-                'M_star_at_infall':M_star, 
-                'M_gas_at_infall':M_gas,
-                'M_halo_at_infall':M_halo,
-                'M_vir_at_infall':M_vir,
-                'M_HI_at_infall':M_HI,
-                'theta':theta,
-                'v_r':v_r,
-                'v_rel':v_rel_mag,
-                'v_max':Vmax, 
-                'r_peri':R_peri,
-                'Pram':Pram,
-                'rho_cgm':rho_cgm,
-                'Prest':Prest
-            }, outfile, protocol=2)
-
+axes[0].set_ylabel(r'$y$ [kpc]')
+cax = plt.subplot(gs[-1])
+cbar = fig.colorbar(im, cax=cax, label=r'Gas Density [$\mathrm{M}_\odot~\mathrm{kpc}^{-3}$]')
+cbar.ax.minorticks_on()
+    
+fig.savefig('ram_pressure_images.pdf',dpi=300)
+plt.close()
