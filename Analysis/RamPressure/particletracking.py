@@ -83,26 +83,35 @@ def get_snap_start(sim,z0haloid):
     return snap_start
 
 
-def get_iords(filepaths, haloids):
+def get_iords(sim, z0haloid, filepaths, haloids):
     # '''Get the particle indices (iords) for all gas particles that have been in the halo since snap_start.''''
-    # TODO save these iords to a pickle file so that we don't have to do this every time
-    print('Getting iords to track...')
-    iords = np.array([])
-    for f,haloid in tqdm.tqdm(zip(filepaths,haloids),total=len(filepaths)):
-        s = pynbody.load(f)
-        s.physical_units()
-        h = s.halos()
-        halo = h[haloid]
-        iord = np.array(halo.gas['iord'], dtype=int)
-        iords = np.union1d(iords, iord)
+    path = f'../../Data/iords/{sim}_{z0haloid}.pickle'
+    if os.path.exists(path):
+        print(f'Found iords file at {path}, loading these...')
+        with open(path,'rb') as infile:
+            iords = pickle.load(infile)
     
+    else:
+        print(f'No iords file, computing iords to track (saving to {path})...')
+        iords = np.array([])
+        for f,haloid in tqdm.tqdm(zip(filepaths,haloids),total=len(filepaths)):
+            s = pynbody.load(f)
+            s.physical_units()
+            h = s.halos()
+            halo = h[haloid]
+            iord = np.array(halo.gas['iord'], dtype=int)
+            iords = np.union1d(iords, iord)
+        
+        with open(path,'wb') as outfile:
+            pickle.dump(iords,outfile)
+
     return iords
 
 
 
-def run_tracking(filepaths,haloids,h1ids):
+def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
     # now we need to start tracking, so we need to get the iords
-    iords = get_iords(filepaths, haloids)
+    iords = get_iords(sim, z0haloid, filepaths, haloids)
     
     use_iords = True
     verbose = False
@@ -197,8 +206,7 @@ if __name__ == '__main__':
     # filepaths and haloids now go the "right" way, i.e. starts from start_snap and goes until z=0
 
     # we save the data as an .hdf5 file since this is meant for large datasets, so that should work pretty good
-
-    output = run_tracking(filepaths, haloids, h1ids)
+    output = run_tracking(sim, z0haloid, filepaths, haloids, h1ids)
     output.to_hdf('../../Data/tracked_particles.hdf5',key=f'{sim}_{z0haloid}')
 
 
