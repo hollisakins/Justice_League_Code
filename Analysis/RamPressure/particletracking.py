@@ -8,6 +8,16 @@ import os
 
 hubble =  0.6776942783267969
 
+# h148 28
+# h148 37
+# h148 68
+# h242 80
+# h229 20
+# h229 22
+# h242 24
+# h148 13
+
+
 # loop through all the snapshots we're interested in first and get the iords of all gas particles in the halo at each snapshot
 # then go back and loop again, this time tracking all gas particles in our iord list i.e.
 # gas_particles = halo.gas[halo.gas['iord']==iord_stored]
