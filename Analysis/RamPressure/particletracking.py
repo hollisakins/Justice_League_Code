@@ -41,8 +41,8 @@ def get_stored_filepaths_haloids(sim,z0haloid):
         print("sim must be one of 'h148','h229','h242','h329'")
         raise
     try:
-        haloids = f['haloids'][sim][z0haloid]
-        h1ids = f['haloids'][sim][1]
+        haloids = d['haloids'][sim][z0haloid]
+        h1ids = d['haloids'][sim][1]
     except KeyError:
         print('z0haloid not found, perhaps this is a halo that has no stars at z=0, and therefore isnt tracked')
         raise
@@ -74,19 +74,21 @@ def get_snap_start(sim,z0haloid):
     for i,f in enumerate(filepaths):
         s = pynbody.load(f)
         t = float(s.properties['time'].in_units('Gyr'))
-        if t < ti:
+        if t<ti:
             snap_start = i
             break
-        else: continue
+        else: 
+            continue
     print(f'Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!
     return snap_start
 
 
 def get_iords(filepaths, haloids):
-    '''Get the particle indices (iords) for all gas particles that have been in the halo since snap_start.''''
+    # '''Get the particle indices (iords) for all gas particles that have been in the halo since snap_start.''''
+    # TODO save these iords to a pickle file so that we don't have to do this every time
     print('Getting iords to track...')
     iords = np.array([])
-    for f,haloid in tqdm(zip(filepaths,haloids),total=len(filepaths)):
+    for f,haloid in tqdm.tqdm(zip(filepaths,haloids),total=len(filepaths)):
         s = pynbody.load(f)
         s.physical_units()
         h = s.halos()
@@ -98,15 +100,15 @@ def get_iords(filepaths, haloids):
 
 
 
-def run_tracking(filepaths,haloids):
+def run_tracking(filepaths,haloids,h1ids):
     # now we need to start tracking, so we need to get the iords
     iords = get_iords(filepaths, haloids)
     
     use_iords = True
-    verbose = True
+    verbose = False
     output = pd.DataFrame()
-
-    for f,haloid,h1id in tqdm(zip(filepaths,haloids,h1ids),total=len(filepaths)):
+    print('Starting tracking/analysis...')
+    for f,haloid,h1id in tqdm.tqdm(zip(filepaths,haloids,h1ids),total=len(filepaths)):
         s = pynbody.load(f)
         s.physical_units()
         h = s.halos()
@@ -138,16 +140,19 @@ def run_tracking(filepaths,haloids):
 def analysis(s,halo,h1,gas_particles):
     output = pd.DataFrame()
 
-    output['rho'] = np.array(gas_particles['rho'].in_units('Msol kpc**-3'), dtype=float) * 4.077603812e-8 # multiply to convert to amu/cm^3
-    output['temp'] = np.array(gas_particles['temp'].in_units('K'), dtype=float)
-    output['mass'] = np.array(gas_particles['mass'].in_units('Msol'), dtype=float)
-    output['coolontime'] = np.array(gas_particles['coolontime'].in_units('Gyr'),dtype=float)
+    if len(gas_particles) != len(gas_particles.g):
+        raise Exception('Some particles are no longer gas particles...')
+
+    output['rho'] = np.array(gas_particles.g['rho'].in_units('Msol kpc**-3'), dtype=float) * 4.077603812e-8 # multiply to convert to amu/cm^3
+    output['temp'] = np.array(gas_particles.g['temp'].in_units('K'), dtype=float)
+    output['mass'] = np.array(gas_particles.g['mass'].in_units('Msol'), dtype=float)
+    output['coolontime'] = np.array(gas_particles.g['coolontime'].in_units('Gyr'),dtype=float)
     
     pynbody.analysis.halo.center(halo)
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
     Rvir = halo.properties['Rvir']/hubble
     output['r'] = np.array(np.sqrt(x**2 + y**2 + z**2), dtype=float)
-    ouptut['r_per_Rvir'] = output.r / Rvir
+    output['r_per_Rvir'] = output.r / Rvir
 
     pynbody.analysis.halo.center(h1)
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
@@ -160,7 +165,7 @@ def analysis(s,halo,h1,gas_particles):
     sat_halo = output.r_per_Rvir < 1
     IGM = output.h1dist > 1
     host_halo = (output.r_per_Rvir > 1) & (output.h1dist < 1)
-    host_disk = (outptu.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r_per_Rvir > 1) & (output.h1dist < 0.1)
+    host_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r_per_Rvir > 1) & (output.h1dist < 0.1)
     # other satellite: how to connect AHF membership to particles?
 
     output['sat_disk'] = np.array(sat_disk,dtype=bool)
@@ -179,7 +184,6 @@ if __name__ == '__main__':
     snap_start = get_snap_start(sim,z0haloid)
     filepaths, haloids, h1ids = get_stored_filepaths_haloids(sim,z0haloid)
     # filepaths starts with z=0 and goes to z=15 or so
-    print(len(filepaths),len(haloids))
 
     # fix the case where the satellite doesn't have merger info prior to 
     if len(haloids) < snap_start:
@@ -187,15 +191,15 @@ if __name__ == '__main__':
         raise Exception('Careful! You may have an error since the satellite doesnt have mergertree info out to the time where you want to start. This case is untested')
     
     if len(haloids) >= snap_start:
-        filepaths = np.flip(filepaths[:snap_start])
-        haloids = np.flip(haloids[:snap_start])
+        filepaths = np.flip(filepaths[:snap_start+1])
+        haloids = np.flip(haloids[:snap_start+1])
 
     # filepaths and haloids now go the "right" way, i.e. starts from start_snap and goes until z=0
 
     # we save the data as an .hdf5 file since this is meant for large datasets, so that should work pretty good
 
     output = run_tracking(filepaths, haloids, h1ids)
-    output.to_hdf(f'../../Data/{sim}_{z0haloid}_particles.hdf5')
+    output.to_hdf('../../Data/tracked_particles.hdf5',key=f'{sim}_{z0haloid}')
 
 
 
