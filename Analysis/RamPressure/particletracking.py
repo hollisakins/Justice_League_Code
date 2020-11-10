@@ -8,24 +8,6 @@ import os
 
 hubble =  0.6776942783267969
 
-
-# we want to follow all the gas that was ever in the satellite since it was within 2 Rvir from the host
-# what is the best way to do this? 
-# one way would be to track *all the gas in the simulation* back in time and see if each particle was ever in the satellite
-# this is stupid though
-# a better way would be to start with the snapshot where the satellite is at 2 Rvir (snap_start)
-# then store all the gas particles in that snapshot
-# then track those to the next snapshot. at this point, some will still be in the satellite and some won't be. 
-# so we'll want to again get a list of all the gas particles in the snapshot and conjoin those filters with an OR, so we say
-# new_gas_particles = gas_particles_in_last_snapshot | gas_particles_in_current_snapshot
-# then we can run our analysis on `new_gas_particles`, which includes all gas that has been in the galaxy since snap_start
-# then repeat this process on the next snapshot. 
-
-# a problem with this method: 
-# whatever gas particles enter the halo will not be tracked prior to entering (i.e. we won't know how they got there)
-# but maybe we can reasonably assume they accreted from the IGM/CGM, or are just passing through?
-
-# new idea: 
 # loop through all the snapshots we're interested in first and get the iords of all gas particles in the halo at each snapshot
 # then go back and loop again, this time tracking all gas particles in our iord list i.e.
 # gas_particles = halo.gas[halo.gas['iord']==iord_stored]
@@ -153,6 +135,9 @@ def analysis(s,halo,h1,gas_particles):
     if len(gas_particles) != len(gas_particles.g):
         raise Exception('Some particles are no longer gas particles...')
 
+
+    output['time'] = np.array([float(s.properties['time'].in_units('Gyr'))]*len(gas_particles))
+    output['pid'] = np.array(gas_particles['iord'],dtype=int)
     output['rho'] = np.array(gas_particles.g['rho'].in_units('Msol kpc**-3'), dtype=float) * 4.077603812e-8 # multiply to convert to amu/cm^3
     output['temp'] = np.array(gas_particles.g['temp'].in_units('K'), dtype=float)
     output['mass'] = np.array(gas_particles.g['mass'].in_units('Msol'), dtype=float)
@@ -163,6 +148,14 @@ def analysis(s,halo,h1,gas_particles):
     Rvir = halo.properties['Rvir']/hubble
     output['r'] = np.array(np.sqrt(x**2 + y**2 + z**2), dtype=float)
     output['r_per_Rvir'] = output.r / Rvir
+    output['x'] = x
+    output['y'] = y
+    output['z'] = z
+
+    output['vx'] = np.array(gas_particles['vx'].in_units('km s**-1'),dtype=float)
+    output['vy'] = np.array(gas_particles['vy'].in_units('km s**-1'),dtype=float)
+    output['vz'] = np.array(gas_particles['vz'].in_units('km s**-1'),dtype=float)
+    output['v'] = np.array(np.sqrt(output.vx**2 + output.vy**2 + output.vz**2))
 
     pynbody.analysis.halo.center(h1)
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
@@ -183,6 +176,13 @@ def analysis(s,halo,h1,gas_particles):
     output['IGM'] = np.array(IGM,dtype=bool)
     output['host_halo'] = np.array(host_halo,dtype=bool)
     output['host_disk'] = np.array(host_disk,dtype=bool)
+    classification = np.zeros(shape=sat_disk.shape)
+    classification[sat_disk] = 1
+    classification[sat_halo] = 2
+    classification[host_disk] = 3
+    classification[host_halo] = 4
+    classification[IGM] = 5
+    output['classification'] = classification
 
     return output
 
