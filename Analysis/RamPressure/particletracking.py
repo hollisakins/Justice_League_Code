@@ -161,6 +161,7 @@ def analysis(s,halo,h1,gas_particles):
     output['x'] = x
     output['y'] = y
     output['z'] = z
+    output['satRvir'] = np.array([Rvir]*len(x))
 
     output['vx'] = np.array(gas_particles['vx'].in_units('km s**-1'),dtype=float)
     output['vy'] = np.array(gas_particles['vy'].in_units('km s**-1'),dtype=float)
@@ -170,12 +171,32 @@ def analysis(s,halo,h1,gas_particles):
     pynbody.analysis.halo.center(h1)
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
     Rvir = h1.properties['Rvir']/hubble
+    output['x_rel_host'] = x
+    output['y_rel_host'] = y
+    output['z_rel_host'] = z
     output['h1dist'] = np.array(np.sqrt(x**2 + y**2 + z**2), dtype=float) / Rvir
+    output['h1Rvir'] = np.array([Rvir]*len(x))
 
+    # positions and velocities of halos
+    output['sat_Xc'] = halo.properties['Xc']/hubble
+    output['sat_Yc'] = halo.properties['Yc']/hubble
+    output['sat_Zc'] = halo.properties['Zc']/hubble
+    
+    output['sat_vx'] = halo.properties['VXc']
+    output['sat_vy'] = halo.properties['VYc']
+    output['sat_vz'] = halo.properties['VZc']
+
+    output['host_Xc'] = h1.properties['Xc']/hubble
+    output['host_Yc'] = h1.properties['Yc']/hubble
+    output['host_Zc'] = h1.properties['Zc']/hubble
+
+    output['host_vx'] = h1.properties['VXc']
+    output['host_vy'] = h1.properties['VYc']
+    output['host_vz'] = h1.properties['VZc']
 
     # classifications: sat disk, sat halo, host halo, other satellite, IGM
     sat_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r < 3)
-    sat_halo = output.r_per_Rvir < 1
+    sat_halo = (output.r_per_Rvir < 1) & ~sat_disk
     IGM = output.h1dist > 1
     host_halo = (output.r_per_Rvir > 1) & (output.h1dist < 1)
     host_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r_per_Rvir > 1) & (output.h1dist < 0.1)
