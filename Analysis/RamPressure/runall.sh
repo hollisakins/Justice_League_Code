@@ -7,14 +7,12 @@ date
 python particletracking.py h148 13 & 
 python particletracking.py h229 20 &
 python particletracking.py h242 24 & 
+python particletracking.py h148 37 &
 wait
 python particletracking.py h148 28 & 
 python particletracking.py h229 22 & 
 python particletracking.py h242 80 &
-wait
-python particletracking.py h148 37 & 
-wait 
-python particletracking.py h148 68 & 
+python particletracking.py h148 68 &
 wait
 
 # include `wait` in between commands to do them in batches
