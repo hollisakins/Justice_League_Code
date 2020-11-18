@@ -150,6 +150,6 @@ ax1.tick_params(top=True,right=True,direction='in', which='both')
 ax2.tick_params(top=True,right=True,direction='in', which='both')
 
 
-plt.savefig(f'plots/{key}_orbit.pdf')
+plt.savefig(f'plots/orbits/{key}_orbit.pdf')
 
-plt.show()
+plt.close()

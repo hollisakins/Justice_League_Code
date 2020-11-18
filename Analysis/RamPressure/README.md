@@ -8,13 +8,21 @@ In this directory lies code I'm using to analyze ram pressure stripping and quen
 
 This script runs particle tracking on a particular satellite in a particular simulation, which are specified at the command line (e.g. `python particletracking.py h329 11`). The code tracks gas particles, starting at the snapshot where the satellite first crosses 2 Rvir from its host and ending at redshift 0. Gas particles that are tracked are *those that are in the satellite for at least one snapshot in this range*. 
 
-> plot_gen.py
-
-This script generates (and saves) plots of tracked gas particles and satellite orbits for a simulation/satellite specified as a bash argument. 
-
 > runall.sh
 
 This script is used to run multiple particle tracking scripts in parallel, using the `&` bash syntax. This can greatly speed up the process of running particle tracking on multiple galaxies, but also uses a lot more computational resources. I wouldn't recommend running more than 5 at a time on `quirm`. 
+
+> plot_gen_orbits.py
+
+This script generates (and saves) plots of tracked gas particles and satellite orbits for a simulation/satellite specified as a bash argument. Saves files to `plots/orbits/{sim}_{haloid}_orbit.pdf`.
+
+> plot_gen_fractions.py
+
+This script generates (and saves) plots of fractions of gas states over time, for a simulation/satellite specified as a bash argument. Saves files to `plots/fractions/{sim}_{haloid}_fractions.pdf`. 
+
+> ParticleTrackingPlots.ipynb
+
+Working notebook to mess with plots and analyze data. 
 
 ## Data
 

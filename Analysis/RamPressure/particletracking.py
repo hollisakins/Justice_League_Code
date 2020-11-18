@@ -198,8 +198,8 @@ def analysis(s,halo,h1,gas_particles):
     sat_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r < 3)
     sat_halo = (output.r_per_Rvir < 1) & ~sat_disk
     IGM = output.h1dist > 1
-    host_halo = (output.r_per_Rvir > 1) & (output.h1dist < 1)
     host_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r_per_Rvir > 1) & (output.h1dist < 0.1)
+    host_halo = (output.r_per_Rvir > 1) & (output.h1dist < 1) & ~host_disk
     # other satellite: how to connect AHF membership to particles?
 
     output['sat_disk'] = np.array(sat_disk,dtype=bool)
