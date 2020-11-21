@@ -68,7 +68,7 @@ massform = np.array(stars['mass'])
 # sSFR = sfr/np.power(10,mstar_int)
 
 
-outdict = {'tform':tform, 'massform':massform}z
+outdict = {'tform':tform, 'massform':massform}
 out = pd.DataFrame(outdict)
 out.to_hdf('../../Data/sfhs.hdf5', key=str(sim)+'_'+str(haloid))
 
