@@ -16,7 +16,7 @@ import pickle
 age = 13.800797497330507
 
 sim = str(sys.argv[1])
-haloid = str(sys.argv[2])
+haloid = int(sys.argv[2])
 
 with open('../../Data/filepaths_haloids.pickle','rb') as f:
     d = pickle.load(f)
