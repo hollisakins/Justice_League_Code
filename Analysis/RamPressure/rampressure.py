@@ -72,6 +72,7 @@ def get_snap_start(sim,z0haloid):
 
 def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
     output_tot = pd.DataFrame()
+    
     print('Starting calculations...')
     for f,haloid,h1id in tqdm.tqdm(zip(filepaths,haloids,h1ids),total=len(filepaths)):
         s = pynbody.load(f)
@@ -83,8 +84,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         a = float(s.properties['a'])
 
         output = pd.DataFrame()
-        output['t'] = t
-        output['a'] = a
+        output['t'] = [t]
+        output['a'] = [a]
+        print(f'\n\t Time = {t:.1f} Gyr')
 
         # RAM PRESSURE CALCULATIONS (SIMPLE)
 
@@ -93,8 +95,8 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         r_host = np.array([host.properties[k]/hubble for k in ['Xc','Yc','Zc']])
         r_rel = r_sat - r_host
         h1dist = np.linalg.norm(r_rel)
-        output['h1dist'] = h1dist
-        print(f'\n\t Distance from host = {h1dist:.2f} kpc')
+        output['h1dist'] = [h1dist]
+        print(f'\t Distance from host = {h1dist:.2f} kpc')
         
         v_sat = np.array([sat.properties[k] for k in ['VXc','VYc','VZc']])
         v_host = np.array([host.properties[k] for k in ['VXc','VYc','VZc']])
@@ -109,10 +111,10 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         rvir = sat.properties['Rvir']/hubble
         h1rvir = host.properties['Rvir']/hubble
 
-        output['Rvir'] = rvir
-        output['M_star'] = M_star
-        output['M_gas'] = M_gas
-        output['hostRvir'] = h1rvir
+        output['Rvir'] = [rvir]
+        output['M_star'] = [M_star]
+        output['M_gas'] = [M_gas]
+        output['hostRvir'] = [h1rvir]
 
         print(f'\t Satellite M_gas = {M_gas:.1e} Msun')
 
@@ -125,9 +127,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
 
         rho_CGM = density[np.argmin(np.abs(rbins-h1dist))]
         Pram = rho_CGM * v_rel_mag * v_rel_mag
-        output['vel_CGM'] = v_rel_mag
-        output['rho_CGM'] = rho_CGM
-        output['Pram'] = Pram
+        output['vel_CGM'] = [v_rel_mag]
+        output['rho_CGM'] = [rho_CGM]
+        output['Pram'] = [Pram]
         print(f'\t Simple rho_CGM = {rho_CGM:.1e}')
         print(f'\t Simple P_ram = {Pram:.1e}')
 
@@ -162,9 +164,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         vel_CGM = np.linalg.norm(np.average(env['vel'],axis=0,weights=env['mass']))
         rho_CGM = np.average(env['rho'], weights=env['mass'])
         Pram = rho_CGM * vel_CGM * vel_CGM
-        output['vel_CGM_adv'] = vel_CGM
-        output['rho_CGM_adv'] = rho_CGM
-        output['Pram_adv'] = Pram
+        output['vel_CGM_adv'] = [vel_CGM]
+        output['rho_CGM_adv'] = [rho_CGM]
+        output['Pram_adv'] = [Pram]
 
         print(f'\t Advanced rho_CGM = {rho_CGM:.1e}')
         print(f'\t Advanced P_ram = {Pram:.1e}')
@@ -183,30 +185,33 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         M_host_enc = np.sum(host[host_sphere]['mass'].in_units('Msol'))
 
         r_R = (2*M_host_enc / m_sat_enc)**(1/3) * Delta_r
-        output['M_host_enc'] = M_host_enc
-        output['m_sat_enc'] = m_sat_enc
-        output['r_R'] = r_R
+        output['M_host_enc'] = [M_host_enc]
+        output['m_sat_enc'] = [m_sat_enc]
+        output['r_R'] = [r_R]
 
         print(f'\t Roche limit r_R = {r_R:.2f} kpc')
         print(f'\t Host R_vir = {h1rvir:.2f} kpc')
 
 
         # RESTORING PRESSURE CALCULATIONS
-        pynbody.analysis.halo.center(sat)
-        p = pynbody.analysis.profile.Profile(s.g, min=0.01, max=rvir, ndim=3)
-        percent_enc = p['mass_enc']/M_gas
-        rhalf = np.min(p['rbins'][percent_enc > 0.5])
-        SigmaGas = M_gas / (2*np.pi*rhalf**2)
-        Rmax = sat.properties['Rmax']
-        Vmax = sat.properties['Vmax']
-        dphidz = Vmax**2 / Rmax
-        Prest = dphidz * SigmaGas
-        print(f'\t Prest = {Prest:.1e}')
-        #except: 
-        #    print('\t Failed to calculate Prest')
-        #    Prest = None
+        try:
+            pynbody.analysis.halo.center(sat)
+        except: 
+            Prest = 0
 
-        output['Prest'] = Prest
+        if Prest != 0:
+            p = pynbody.analysis.profile.Profile(s.g, min=0.01, max=rvir, ndim=3)
+            percent_enc = p['mass_enc']/M_gas
+            rhalf = np.min(p['rbins'][percent_enc > 0.5])
+            SigmaGas = M_gas / (2*np.pi*rhalf**2)
+            Rmax = sat.properties['Rmax']
+            Vmax = sat.properties['Vmax']
+            dphidz = Vmax**2 / Rmax
+            Prest = dphidz * SigmaGas
+        
+        print(f'\t Prest = {Prest:.1e}')
+
+        output['Prest'] = [Prest]
 
 
         output_tot = pd.concat([output_tot, output])
