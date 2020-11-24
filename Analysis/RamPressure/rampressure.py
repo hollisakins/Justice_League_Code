@@ -82,6 +82,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         t = float(s.properties['time'].in_units('Gyr'))
         a = float(s.properties['a'])
 
+        output = pd.DataFrame()
         output['t'] = t
         output['a'] = a
 
@@ -93,7 +94,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         r_rel = r_sat - r_host
         h1dist = np.linalg.norm(r_rel)
         output['h1dist'] = h1dist
-        print(f'\t Distance from host = {h1dist:.2f} kpc')
+        print(f'\n\t Distance from host = {h1dist:.2f} kpc')
         
         v_sat = np.array([sat.properties[k] for k in ['VXc','VYc','VZc']])
         v_host = np.array([host.properties[k] for k in ['VXc','VYc','VZc']])
@@ -153,7 +154,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         data = data[(data.r_per_Rvir < 1)&(data.time < t)]
         iords_to_exclude = np.array(data.pid,dtype=int)
 
-        exlude = np.isin(env['iord'], iords_to_exclude)
+        exclude = np.isin(env['iord'], iords_to_exclude)
         env = env[~exclude]
         print(f'\t Reduced to {len(env)} particles by excluding those that were prev. in sat')
 
@@ -175,7 +176,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         # instead we will calculated the Roche Limit, the radius at which the satellite would be tidally disrupted
 
         # unsure what delta_r to choose. for now using Rvir
-        Delta_r = rvir
+        Delta_r = 0.2*rvir
         sat_sphere = pynbody.filt.Sphere(str(Delta_r)+' kpc', [0,0,0])
         m_sat_enc = np.sum(sat[sat_sphere]['mass'].in_units('Msol'))
         host_sphere = pynbody.filt.Sphere(str(h1dist)+' kpc', [0,0,0])
@@ -191,18 +192,19 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
 
 
         # RESTORING PRESSURE CALCULATIONS
-        try:
-            pynbody.analysis.angmom.faceon(sat)
-            p = pynbody.analysis.profile.Profile(s.g, min=0.01, max=rvir)
-            percent_enc = p['mass_enc']/M_gas
-            rhalf = np.min(p['rbins'][percent_enc > 0.5])
-            SigmaGas = M_gas / (2*np.pi*rhalf**2)
-            dphidz = Vmax**2 / Rmax
-            Prest = dphidz * SigmaGas
-            print(f'\t Prest = {Prest:.1e}')
-        except: 
-            print('\t Failed to calculate Prest')
-            Prest = None
+        pynbody.analysis.halo.center(sat)
+        p = pynbody.analysis.profile.Profile(s.g, min=0.01, max=rvir, ndim=3)
+        percent_enc = p['mass_enc']/M_gas
+        rhalf = np.min(p['rbins'][percent_enc > 0.5])
+        SigmaGas = M_gas / (2*np.pi*rhalf**2)
+        Rmax = sat.properties['Rmax']
+        Vmax = sat.properties['Vmax']
+        dphidz = Vmax**2 / Rmax
+        Prest = dphidz * SigmaGas
+        print(f'\t Prest = {Prest:.1e}')
+        #except: 
+        #    print('\t Failed to calculate Prest')
+        #    Prest = None
 
         output['Prest'] = Prest
 
