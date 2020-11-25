@@ -197,8 +197,10 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         try:
             pynbody.analysis.halo.center(sat)
         except: 
-            Prest = 0
-
+            pass
+        
+        Prest = 0
+            
         if Prest != 0:
             p = pynbody.analysis.profile.Profile(s.g, min=0.01, max=rvir, ndim=3)
             percent_enc = p['mass_enc']/M_gas
