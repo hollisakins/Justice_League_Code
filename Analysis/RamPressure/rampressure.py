@@ -196,12 +196,12 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         # RESTORING PRESSURE CALCULATIONS
         try:
             pynbody.analysis.halo.center(sat)
+            calc_rest = True
         except: 
-            pass
+            calc_rest = False
+            Prest = 0.
         
-        Prest = 0
-            
-        if Prest != 0:
+        if calc_rest:
             p = pynbody.analysis.profile.Profile(s.g, min=0.01, max=rvir, ndim=3)
             percent_enc = p['mass_enc']/M_gas
             rhalf = np.min(p['rbins'][percent_enc > 0.5])
