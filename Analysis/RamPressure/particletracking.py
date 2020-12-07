@@ -18,12 +18,6 @@ hubble =  0.6776942783267969
 # h148 13
 
 
-# loop through all the snapshots we're interested in first and get the iords of all gas particles in the halo at each snapshot
-# then go back and loop again, this time tracking all gas particles in our iord list i.e.
-# gas_particles = halo.gas[halo.gas['iord']==iord_stored]
-# then you can just track those from the beginning and not have to worry about adding new particles to the tracking as you go
-
-
 def get_stored_filepaths_haloids(sim,z0haloid):
     # get snapshot paths and haloids from stored file
     with open('../../Data/filepaths_haloids.pickle','rb') as f:
@@ -60,7 +54,7 @@ def get_snap_start(sim,z0haloid):
     ts = read_timesteps(sim)
     ts = ts[ts.z0haloid == z0haloid]
 
-    dist = np.array(ts.h1dist, dtype=float)
+    dist = np.array(ts.h1dist, dtype=float) # doesn't need scale factor correction since its r/Rvir
     time = np.array(ts.time, dtype=float)
     ti = np.min(time[dist <= 2])
 
@@ -141,6 +135,7 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
 
 def analysis(s,halo,h1,gas_particles):
     output = pd.DataFrame()
+    a = float(s.properties['a'])
 
     if len(gas_particles) != len(gas_particles.g):
         raise Exception('Some particles are no longer gas particles...')
@@ -155,13 +150,14 @@ def analysis(s,halo,h1,gas_particles):
     
     pynbody.analysis.halo.center(halo)
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
-    Rvir = halo.properties['Rvir']/hubble
+    Rvir = halo.properties['Rvir'] * a / hubble
     output['r'] = np.array(np.sqrt(x**2 + y**2 + z**2), dtype=float)
     output['r_per_Rvir'] = output.r / Rvir
     output['x'] = x
     output['y'] = y
     output['z'] = z
     output['satRvir'] = np.array([Rvir]*len(x))
+    output['a'] = np.array([a]*len(x))
 
     output['vx'] = np.array(gas_particles['vx'].in_units('km s**-1'),dtype=float)
     output['vy'] = np.array(gas_particles['vy'].in_units('km s**-1'),dtype=float)
@@ -170,7 +166,7 @@ def analysis(s,halo,h1,gas_particles):
 
     pynbody.analysis.halo.center(h1)
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
-    Rvir = h1.properties['Rvir']/hubble
+    Rvir = h1.properties['Rvir'] / hubble * a
     output['x_rel_host'] = x
     output['y_rel_host'] = y
     output['z_rel_host'] = z
@@ -178,17 +174,17 @@ def analysis(s,halo,h1,gas_particles):
     output['h1Rvir'] = np.array([Rvir]*len(x))
 
     # positions and velocities of halos
-    output['sat_Xc'] = halo.properties['Xc']/hubble
-    output['sat_Yc'] = halo.properties['Yc']/hubble
-    output['sat_Zc'] = halo.properties['Zc']/hubble
+    output['sat_Xc'] = halo.properties['Xc'] / hubble * a
+    output['sat_Yc'] = halo.properties['Yc'] / hubble * a
+    output['sat_Zc'] = halo.properties['Zc'] / hubble * a
     
     output['sat_vx'] = halo.properties['VXc']
     output['sat_vy'] = halo.properties['VYc']
     output['sat_vz'] = halo.properties['VZc']
 
-    output['host_Xc'] = h1.properties['Xc']/hubble
-    output['host_Yc'] = h1.properties['Yc']/hubble
-    output['host_Zc'] = h1.properties['Zc']/hubble
+    output['host_Xc'] = h1.properties['Xc'] / hubble * a
+    output['host_Yc'] = h1.properties['Yc'] / hubble * a
+    output['host_Zc'] = h1.properties['Zc'] / hubble * a
 
     output['host_vx'] = h1.properties['VXc']
     output['host_vy'] = h1.properties['VYc']
