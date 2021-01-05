@@ -91,8 +91,8 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         # RAM PRESSURE CALCULATIONS (SIMPLE)
 
         ## positions and velocities
-        r_sat = np.array([sat.properties[k]/hubble for k in ['Xc','Yc','Zc']])
-        r_host = np.array([host.properties[k]/hubble for k in ['Xc','Yc','Zc']])
+        r_sat = np.array([sat.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
+        r_host = np.array([host.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
         r_rel = r_sat - r_host
         h1dist = np.linalg.norm(r_rel)
         output['h1dist'] = [h1dist]
@@ -108,8 +108,8 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         ## galaxy properties
         M_star = np.sum(sat.s['mass'].in_units('Msol'))
         M_gas = np.sum(sat.g['mass'].in_units('Msol'))
-        rvir = sat.properties['Rvir']/hubble
-        h1rvir = host.properties['Rvir']/hubble
+        rvir = sat.properties['Rvir']/hubble*a
+        h1rvir = host.properties['Rvir']/hubble*a
 
         output['Rvir'] = [rvir]
         output['M_star'] = [M_star]
