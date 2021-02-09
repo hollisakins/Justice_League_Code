@@ -140,14 +140,16 @@ def analysis(s,halo,h1,gas_particles):
     if len(gas_particles) != len(gas_particles.g):
         raise Exception('Some particles are no longer gas particles...')
 
-
+    # calculate properties that are invariant to centering
     output['time'] = np.array([float(s.properties['time'].in_units('Gyr'))]*len(gas_particles))
     output['pid'] = np.array(gas_particles['iord'],dtype=int)
     output['rho'] = np.array(gas_particles.g['rho'].in_units('Msol kpc**-3'), dtype=float) * 4.077603812e-8 # multiply to convert to amu/cm^3
     output['temp'] = np.array(gas_particles.g['temp'].in_units('K'), dtype=float)
     output['mass'] = np.array(gas_particles.g['mass'].in_units('Msol'), dtype=float)
     output['coolontime'] = np.array(gas_particles.g['coolontime'].in_units('Gyr'),dtype=float)
+    output['a'] = np.array([a]*len(x))
     
+    # calculate properties centered on the satellite
     pynbody.analysis.halo.center(halo)
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
     Rvir = halo.properties['Rvir'] * a / hubble
@@ -157,21 +159,27 @@ def analysis(s,halo,h1,gas_particles):
     output['y'] = y
     output['z'] = z
     output['satRvir'] = np.array([Rvir]*len(x))
-    output['a'] = np.array([a]*len(x))
 
     output['vx'] = np.array(gas_particles['vx'].in_units('km s**-1'),dtype=float)
     output['vy'] = np.array(gas_particles['vy'].in_units('km s**-1'),dtype=float)
     output['vz'] = np.array(gas_particles['vz'].in_units('km s**-1'),dtype=float)
     output['v'] = np.array(np.sqrt(output.vx**2 + output.vy**2 + output.vz**2))
 
+    # calculate properties centered on the host
     pynbody.analysis.halo.center(h1)
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
     Rvir = h1.properties['Rvir'] / hubble * a
+    output['r_rel_host'] = np.array(np.sqrt(x**2 + y**2 + z**2), dtype=float)
+    output['r_rel_host_per_Rvir'] = output.r / Rvir
     output['x_rel_host'] = x
     output['y_rel_host'] = y
     output['z_rel_host'] = z
-    output['h1dist'] = np.array(np.sqrt(x**2 + y**2 + z**2), dtype=float) / Rvir
-    output['h1Rvir'] = np.array([Rvir]*len(x))
+    output['hostRvir'] = np.array([Rvir]*len(x))
+    
+    output['vx_rel_host'] = np.array(gas_particles['vx'].in_units('km s**-1'),dtype=float)
+    output['vy_rel_host'] = np.array(gas_particles['vy'].in_units('km s**-1'),dtype=float)
+    output['vz_rel_host'] = np.array(gas_particles['vz'].in_units('km s**-1'),dtype=float)
+    output['v_rel_host'] = np.array(np.sqrt(output.vx_rel_host**2 + output.vy_rel_host**2 + output.vz_rel_host**2))
 
     # positions and velocities of halos
     output['sat_Xc'] = halo.properties['Xc'] / hubble * a
@@ -189,6 +197,45 @@ def analysis(s,halo,h1,gas_particles):
     output['host_vx'] = h1.properties['VXc']
     output['host_vy'] = h1.properties['VYc']
     output['host_vz'] = h1.properties['VZc']
+    
+    
+    # masses of halos
+    output['sat_Mstar'] = halo.properties['M_star']
+    output['sat_Mgas'] = halo.properties['M_gas']
+    
+    output['host_Mstar'] = h1.properties['M_star']
+    output['host_Mgas'] = h1.properties['M_gas']
+    
+    
+    # kinetic to potential energy ratios for satellite disk
+    m = np.array(output.mass) * 1.989e30
+    v = np.array(output.v) * 1000
+    K = 0.5 * m * v * v
+
+    M = (output.sat_Mstar + output.sat_Mgas) * 1.989e30
+    r = np.array(output.r) * 3.086e19
+    U = 6.6743e-11 * M * m / r
+    ratio = K/U
+    
+    output['K_sat'] = K
+    output['U_sat'] = U
+    output['ratio_sat'] = ratio
+    
+    # kinetic to potential energy ratios for satellite host
+    m = np.array(output.mass) * 1.989e30
+    v = np.array(output.v_rel_host) * 1000
+    K = 0.5 * m * v * v
+
+    M = (output.host_Mstar + output.host_Mgas) * 1.989e30
+    r = np.array(output.r_rel_host) * 3.086e19
+    U = 6.6743e-11 * M * m / r
+    ratio = K/U
+    
+    output['K_host'] = K
+    output['U_host'] = U
+    output['ratio_host'] = ratio
+
+
 
     # classifications: sat disk, sat halo, host halo, other satellite, IGM
     sat_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r < 3)
@@ -196,7 +243,7 @@ def analysis(s,halo,h1,gas_particles):
     IGM = output.h1dist > 1
     host_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r_per_Rvir > 1) & (output.h1dist < 0.1)
     host_halo = (output.r_per_Rvir > 1) & (output.h1dist < 1) & ~host_disk
-    # other satellite: how to connect AHF membership to particles?
+    # other satellite: how to connect AHF membership to particles?    
 
     output['sat_disk'] = np.array(sat_disk,dtype=bool)
     output['sat_halo'] = np.array(sat_halo,dtype=bool)
