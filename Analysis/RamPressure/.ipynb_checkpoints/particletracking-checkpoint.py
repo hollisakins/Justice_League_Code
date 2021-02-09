@@ -147,7 +147,7 @@ def analysis(s,halo,h1,gas_particles):
     output['temp'] = np.array(gas_particles.g['temp'].in_units('K'), dtype=float)
     output['mass'] = np.array(gas_particles.g['mass'].in_units('Msol'), dtype=float)
     output['coolontime'] = np.array(gas_particles.g['coolontime'].in_units('Gyr'),dtype=float)
-    output['a'] = np.array([a]*len(x))
+    
     
     # calculate properties centered on the satellite
     pynbody.analysis.halo.center(halo)
@@ -159,6 +159,7 @@ def analysis(s,halo,h1,gas_particles):
     output['y'] = y
     output['z'] = z
     output['satRvir'] = np.array([Rvir]*len(x))
+    output['a'] = np.array([a]*len(x))
 
     output['vx'] = np.array(gas_particles['vx'].in_units('km s**-1'),dtype=float)
     output['vy'] = np.array(gas_particles['vy'].in_units('km s**-1'),dtype=float)
