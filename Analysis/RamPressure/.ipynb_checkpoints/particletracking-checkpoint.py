@@ -239,25 +239,25 @@ def analysis(s,halo,h1,gas_particles):
 
 
     # classifications: sat disk, sat halo, host halo, other satellite, IGM
-    sat_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r < 3)
-    sat_halo = (output.r_per_Rvir < 1) & ~sat_disk
-    IGM = output.h1dist > 1
-    host_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r_per_Rvir > 1) & (output.h1dist < 0.1)
-    host_halo = (output.r_per_Rvir > 1) & (output.h1dist < 1) & ~host_disk
-    # other satellite: how to connect AHF membership to particles?    
+#     sat_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r < 3)
+#     sat_halo = (output.r_per_Rvir < 1) & ~sat_disk
+#     IGM = output.r_rel_host_per_Rvir > 1
+#     host_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r_per_Rvir > 1) & (output.r_rel_host_per_Rvir < 0.1)
+#     host_halo = (output.r_per_Rvir > 1) & (output.r_rel_host_per_Rvir < 1) & ~host_disk
+#     # other satellite: how to connect AHF membership to particles?    
 
-    output['sat_disk'] = np.array(sat_disk,dtype=bool)
-    output['sat_halo'] = np.array(sat_halo,dtype=bool)
-    output['IGM'] = np.array(IGM,dtype=bool)
-    output['host_halo'] = np.array(host_halo,dtype=bool)
-    output['host_disk'] = np.array(host_disk,dtype=bool)
-    classification = np.zeros(shape=sat_disk.shape)
-    classification[sat_disk] = 1
-    classification[sat_halo] = 2
-    classification[host_disk] = 3
-    classification[host_halo] = 4
-    classification[IGM] = 5
-    output['classification'] = classification
+#     output['sat_disk'] = np.array(sat_disk,dtype=bool)
+#     output['sat_halo'] = np.array(sat_halo,dtype=bool)
+#     output['IGM'] = np.array(IGM,dtype=bool)
+#     output['host_halo'] = np.array(host_halo,dtype=bool)
+#     output['host_disk'] = np.array(host_disk,dtype=bool)
+#     classification = np.zeros(shape=sat_disk.shape)
+#     classification[sat_disk] = 1
+#     classification[sat_halo] = 2
+#     classification[host_disk] = 3
+#     classification[host_halo] = 4
+#     classification[IGM] = 5
+#     output['classification'] = classification
 
     return output
 
