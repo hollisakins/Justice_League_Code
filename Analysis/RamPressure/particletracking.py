@@ -124,7 +124,7 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
 
         # run analysis on gas particles!
         # this calls the analysis function i've defined, and concatenates the output from this snapshot to the output overall
-        output = pd.concat([output, analysis(s,halo,h1,gas_particles)])
+        output = pd.concat([output, analysis(s,halo,h1,gas_particles,h,haloid,h1id)])
 
         gas_particles_prev = gas_particles
         snapnum_prev = snapnum
@@ -133,7 +133,7 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
     return output
 
 
-def analysis(s,halo,h1,gas_particles):
+def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
     output = pd.DataFrame()
     a = float(s.properties['a'])
 
@@ -171,7 +171,7 @@ def analysis(s,halo,h1,gas_particles):
     x,y,z = gas_particles['x'],gas_particles['y'],gas_particles['z']
     Rvir = h1.properties['Rvir'] / hubble * a
     output['r_rel_host'] = np.array(np.sqrt(x**2 + y**2 + z**2), dtype=float)
-    output['r_rel_host_per_Rvir'] = output.r / Rvir
+    output['r_rel_host_per_Rvir'] = output.r_rel_host / Rvir
     output['x_rel_host'] = x
     output['y_rel_host'] = y
     output['z_rel_host'] = z
@@ -207,57 +207,67 @@ def analysis(s,halo,h1,gas_particles):
     output['host_Mstar'] = h1.properties['M_star']
     output['host_Mgas'] = h1.properties['M_gas']
     
+
+    # defining r_g of satellite
+    pynbody.analysis.angmom.faceon(halo)
+    Rvir = halo.properties['Rvir'] / hubble * a 
+    bins = np.power(10, np.linspace(-1, np.log10(Rvir), 100))
+    p_gas = pynbody.analysis.profile.Profile(halo.g, bins=bins)
+    bins = np.power(10, np.linspace(-1, np.log10(0.2*Rvir), 500))
+    p_stars = pynbody.analysis.profile.Profile(halo.s, bins=bins)
     
-    # kinetic to potential energy ratios for satellite disk
-    m = np.array(output.mass) * 1.989e30
-    v = np.array(output.v) * 1000
-    K = 0.5 * m * v * v
-
-    M = (output.sat_Mstar + output.sat_Mgas) * 1.989e30
-    r = np.array(output.r) * 3.086e19
-    U = 6.6743e-11 * M * m / r
-    ratio = K/U
+    x, y = p_stars['rbins'], p_stars['mass_enc']/np.sum(halo.s['mass'].in_units('Msol'))
+    r_half = np.average([np.max(x[y < 0.5]), np.min(x[y > 0.5])])
     
-    output['K_sat'] = K
-    output['U_sat'] = U
-    output['ratio_sat'] = ratio
+    x, y = p_gas['rbins'], p_gas['density']
+    sigma_th = 9e6 # minimum surface density for SF according to Kennicutt
+    r_gas = np.average([np.max(x[y > sigma_th]), np.min(x[y < sigma_th])])
     
-    # kinetic to potential energy ratios for satellite host
-    m = np.array(output.mass) * 1.989e30
-    v = np.array(output.v_rel_host) * 1000
-    K = 0.5 * m * v * v
 
-    M = (output.host_Mstar + output.host_Mgas) * 1.989e30
-    r = np.array(output.r_rel_host) * 3.086e19
-    U = 6.6743e-11 * M * m / r
-    ratio = K/U
+    output['sat_r_half'] = r_half
+    output['sat_r_gas'] = r_gas # store these two radii, in post-processing define r_gal as max(r_gas,r_half) but also ensure r_gal doesn't decrease
     
-    output['K_host'] = K
-    output['U_host'] = U
-    output['ratio_host'] = ratio
+    
+    
+    # defining r_g of host
+    pynbody.analysis.angmom.faceon(h1)
+    Rvir = h1.properties['Rvir'] / hubble * a 
+    bins = np.power(10, np.linspace(-1, np.log10(Rvir), 100))
+    p_gas = pynbody.analysis.profile.Profile(h1.g, bins=bins)
+    bins = np.power(10, np.linspace(-1, np.log10(0.2*Rvir), 500))
+    p_stars = pynbody.analysis.profile.Profile(h1.s, bins=bins)
+    
+    x, y = p_stars['rbins'], p_stars['mass_enc']/np.sum(h1.s['mass'].in_units('Msol'))
+    r_half = np.average([np.max(x[y < 0.5]), np.min(x[y > 0.5])])
+    
+    x, y = p_gas['rbins'], p_gas['density']
+    sigma_th = 9e6 # minimum surface density for SF according to Kennicutt
+    r_gas = np.average([np.max(x[y > sigma_th]), np.min(x[y < sigma_th])])
+    
 
+    output['host_r_half'] = r_half
+    output['host_r_gas'] = r_gas
+    
 
-
-    # classifications: sat disk, sat halo, host halo, other satellite, IGM
-#     sat_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r < 3)
-#     sat_halo = (output.r_per_Rvir < 1) & ~sat_disk
-#     IGM = output.r_rel_host_per_Rvir > 1
-#     host_disk = (output.rho >= 0.1) & (output.temp <= 1.2e4) & (output.r_per_Rvir > 1) & (output.r_rel_host_per_Rvir < 0.1)
-#     host_halo = (output.r_per_Rvir > 1) & (output.r_rel_host_per_Rvir < 1) & ~host_disk
-#     # other satellite: how to connect AHF membership to particles?    
-
-#     output['sat_disk'] = np.array(sat_disk,dtype=bool)
-#     output['sat_halo'] = np.array(sat_halo,dtype=bool)
-#     output['IGM'] = np.array(IGM,dtype=bool)
-#     output['host_halo'] = np.array(host_halo,dtype=bool)
-#     output['host_disk'] = np.array(host_disk,dtype=bool)
-#     classification = np.zeros(shape=sat_disk.shape)
-#     classification[sat_disk] = 1
-#     classification[sat_halo] = 2
-#     classification[host_disk] = 3
-#     classification[host_halo] = 4
-#     classification[IGM] = 5
-#     output['classification'] = classification
+    
+    # we say the particle is in the satellite if its particle ID is one of those AHF identifies as part of the halo
+    in_sat = np.isin(output.pid, halo.g['iord'])
+    in_host = np.isin(output.pid, h1.g['iord'])
+    
+    iords_other = np.array([])
+    for i in range(len(h)):
+        if (i != haloid) and (i != h1id):
+            halo_other = h[i]
+            if halo_other.properties['hostHalo'] != -1:
+                iords_other = np.append(iords_other, halo_other.g['iord'])
+    
+    in_other_sat = np.isin(output.pid, iords_other)
+    in_IGM = ~in_sat & ~in_host & ~in_other_sat
+    
+    output['in_sat'] = in_sat
+    output['in_host'] = in_host
+    output['in_other_sat'] = in_other_sat
+    output['in_IGM'] = in_IGM
 
     return output
 
