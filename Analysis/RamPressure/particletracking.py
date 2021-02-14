@@ -256,6 +256,7 @@ def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
     
     iords_other = np.array([])
     for i in range(len(h)):
+        i += 1
         if (i != haloid) and (i != h1id):
             halo_other = h[i]
             if halo_other.properties['hostHalo'] != -1:
