@@ -217,11 +217,17 @@ def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
     p_stars = pynbody.analysis.profile.Profile(halo.s, bins=bins)
     
     x, y = p_stars['rbins'], p_stars['mass_enc']/np.sum(halo.s['mass'].in_units('Msol'))
-    r_half = np.average([np.max(x[y < 0.5]), np.min(x[y > 0.5])])
+    try:
+        r_half = np.average([np.max(x[y < 0.5]), np.min(x[y > 0.5])])
+    except:
+        r_half = np.nan
     
     x, y = p_gas['rbins'], p_gas['density']
     sigma_th = 9e6 # minimum surface density for SF according to Kennicutt
-    r_gas = np.average([np.max(x[y > sigma_th]), np.min(x[y < sigma_th])])
+    try:
+        r_gas = np.average([np.max(x[y > sigma_th]), np.min(x[y < sigma_th])])
+    except:
+        r_gas = np.nan
     
 
     output['sat_r_half'] = r_half
@@ -238,12 +244,17 @@ def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
     p_stars = pynbody.analysis.profile.Profile(h1.s, bins=bins)
     
     x, y = p_stars['rbins'], p_stars['mass_enc']/np.sum(h1.s['mass'].in_units('Msol'))
-    r_half = np.average([np.max(x[y < 0.5]), np.min(x[y > 0.5])])
+    try:
+        r_half = np.average([np.max(x[y < 0.5]), np.min(x[y > 0.5])])
+    except:
+        r_half = np.nan
     
     x, y = p_gas['rbins'], p_gas['density']
     sigma_th = 9e6 # minimum surface density for SF according to Kennicutt
-    r_gas = np.average([np.max(x[y > sigma_th]), np.min(x[y < sigma_th])])
-    
+    try:
+        r_gas = np.average([np.max(x[y > sigma_th]), np.min(x[y < sigma_th])])
+    except:
+        r_gas = np.nan
 
     output['host_r_half'] = r_half
     output['host_r_gas'] = r_gas
