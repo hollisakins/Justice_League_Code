@@ -313,8 +313,11 @@ if __name__ == '__main__':
     if len(haloids) >= snap_start:
         filepaths = np.flip(filepaths[:snap_start+1])
         haloids = np.flip(haloids[:snap_start+1])
-
+        h1ids = np.flip(h1ids[:snap_start+1])
+        
     # filepaths and haloids now go the "right" way, i.e. starts from start_snap and goes until z=0
+    assert len(filepaths) == len(haloids)
+    assert len(haloids) == len(h1ids)
 
     # we save the data as an .hdf5 file since this is meant for large datasets, so that should work pretty good
     output = run_tracking(sim, z0haloid, filepaths, haloids, h1ids)
