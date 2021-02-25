@@ -5,9 +5,7 @@
 # the analysis and not have to repeat this code for each analysis component. 
 import numpy as np
 import pandas as pd
-from numba import njit,jit
-import tqdm
-import time as time_module
+
 
 def get_keys():
     path = '../../Data/tracked_particles.hdf5'
@@ -116,95 +114,66 @@ def calc_angles(d):
         
     return d
 
-# @njit
-def run_particle_loop(pids,pids_unique,cool_disk1,hot_disk1,cool_halo1,hot_halo1,host_halo1,host_disk1,IGM1,other_sat1,time1):
-    ejected_rowids = []
-    ejected_state1 = []
-    expelled_rowids = []
-    expelled_state2 = []
-    
-    for pid in pids_unique:
-        cool_disk = cool_disk1[pids==pid]
-        hot_disk = hot_disk1[pids==pid]
-        cool_halo = cool_halo1[pids==pid]
-        hot_halo = hot_halo1[pids==pid]
-        host_halo = host_halo1[pids==pid]
-        host_disk = host_disk1[pids==pid]
-        IGM = IGM1[pids==pid]
-        other_sat = other_sat1[pids==pid]
-        time = time1[pids==pid]
-        
-        i = 0
-        can_be_expelled = False
-        for t2 in time[1:]:
-            i += 1
-            
-            x = np.where((pids==pid) & (time1==t2))[0][0]
-            
-            if cool_disk[i-1] and (cool_halo[i] or hot_halo[i]):
-                state1 = 'cool disk'
-                ejected_rowids.append(x)
-                ejected_state1.append(state1)
-                can_be_expelled = True
-            elif hot_disk[i-1] and (cool_halo[i] or hot_halo[i]):
-                state1 = 'hot disk'
-                ejected_rowids.append(x)
-                ejected_state1.append(state1)
-                can_be_expelled = True
-            if can_be_expelled:
-                if (cool_halo[i-1] or hot_halo[i-1]) and host_halo[i]:    
-                    state2 = 'host halo'
-                    expelled_rowids.append(x)
-                    expelled_state2.append(state2)
-                    
-                if (cool_halo[i-1] or hot_halo[i-1]) and host_disk[i]:    
-                    state2 = 'host disk'
-                    expelled_rowids.append(x)
-                    expelled_state2.append(state2)
-                if (cool_halo[i-1] or hot_halo[i-1]) and IGM[i]:    
-                    state2 = 'IGM'
-                    expelled_rowids.append(x)
-                    expelled_state2.append(state2)
-
-    return ejected_rowids, ejected_state1, expelled_rowids, expelled_state2
-
-
-
-
-
-
-
 def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
+    import tqdm
     data = read_tracked_particles(sim, haloid, verbose=verbose)
 
     if verbose: print(f'Now computing ejected/expelled particles for {sim}-{haloid}...')
+    ejected = pd.DataFrame()
+    expelled = pd.DataFrame()
 
-    pids = np.array(data.pid, dtype=int)
-    pids_unique = np.unique(pids)
-    cool_disk = np.array(data.cool_disk, dtype=bool)
-    hot_disk = np.array(data.hot_disk, dtype=bool)
-    cool_halo = np.array(data.cool_halo, dtype=bool)
-    hot_halo = np.array(data.hot_halo, dtype=bool)
+    pids = np.unique(data.pid)
+    for pid in tqdm.tqdm(pids):
+        dat = data[data.pid==pid]
 
-    host_halo = np.array(data.host_halo, dtype=bool)
-    host_disk = np.array(data.host_disk, dtype=bool)
-    IGM = np.array(data.IGM, dtype=bool)
-    other_sat = np.array(data.other_sat, dtype=bool)
+        cool_disk = np.array(dat.cool_disk, dtype=bool)
+        hot_disk = np.array(dat.hot_disk, dtype=bool)
+        cool_halo = np.array(dat.cool_halo, dtype=bool)
+        hot_halo = np.array(dat.hot_halo, dtype=bool)
 
-    time = np.array(data.time,dtype=float)
-    
-    t0 = time_module.time()
-    ejected_rowids, ejected_state1, expelled_rowids, expelled_state2 = run_particle_loop(pids,pids_unique,cool_disk,hot_disk,cool_halo,hot_halo,
-                                                                                         host_halo,host_disk,IGM,other_sat,time)
-    t1 = time_module.time()    
-    total = t1-t0
-    print(f'Time took: {total:.2f} sec')
-    print(len(ejected_rowids))
-    
-    ejected = data.iloc[np.array(ejected_rowids)]
-    expelled = data.iloc[np.array(expelled_rowids)]
-    ejected['state1'] = np.array(ejected_state1)
-    expelled['state2'] = np.array(expelled_state2)
+        host_halo = np.array(dat.host_halo, dtype=bool)
+        host_disk = np.array(dat.host_disk, dtype=bool)
+        IGM = np.array(dat.IGM, dtype=bool)
+        other_sat = np.array(dat.other_sat, dtype=bool)
+        
+        time = np.array(dat.time,dtype=float)
+        
+        can_be_expelled = False
+
+        for i,t2 in enumerate(time[1:]):
+                i += 1
+                # t1 = time[i-1]
+                
+                if cool_disk[i-1] and (cool_halo[i] or hot_halo[i]):
+                    state1 = 'cool disk'
+                    out = dat[time==t2].copy()
+                    out['state1'] = state1
+                    ejected = pd.concat([ejected, out])
+                    can_be_expelled = True
+                elif hot_disk[i-1] and (cool_halo[i] or hot_halo[i]):
+                    state1 = 'hot disk'
+                    out = dat[time==t2].copy()
+                    out['state1'] = state1
+                    ejected = pd.concat([ejected, out])
+                    can_be_expelled = True
+                
+                if can_be_expelled:
+                    if (cool_halo[i-1] or hot_halo[i-1]) and host_halo[i]:    
+                        state2 = 'host halo'
+                        out = dat[time==t2].copy()
+                        out['state2'] = state2
+                        expelled = pd.concat([expelled, out])
+                    if (cool_halo[i-1] or hot_halo[i-1]) and host_disk[i]:    
+                        state2 = 'host disk'
+                        out = dat[time==t2].copy()
+                        out['state2'] = state2
+                        expelled = pd.concat([expelled, out])
+                    if (cool_halo[i-1] or hot_halo[i-1]) and IGM[i]:    
+                        state2 = 'IGM'
+                        out = dat[time==t2].copy()
+                        out['state2'] = state2
+                        expelled = pd.concat([expelled, out])
+
 
     # apply the calc_angles function along the rows of ejected and expelled
     print('Calculating ejection angles')
