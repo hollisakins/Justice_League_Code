@@ -8,7 +8,7 @@ mpl.rcParams['font.sans-serif'] = ['Tahoma','Lucida Grande','Verdana', 'DejaVu S
 
 import socket
 if socket.gethostname() == "quirm.math.grinnell.edu":
-    z0data_prefix = '/home/akinshol/Data/Akins_Hollis_JL_Code/Data/z0_data/'
+    z0data_prefix = '/home/akinshol/Research/Justice_League_Code/Data/z0_data/'
 else:
     z0data_prefix = '/Users/hollis/Google Drive/Grinnell/MAP/Justice_League_Code/Data/z0_data/' # filepath is different on my local machine
 
