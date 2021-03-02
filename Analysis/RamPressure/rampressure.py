@@ -170,7 +170,8 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         
         # get R_gal from the particletracking code
         data = read_tracked_particles(sim, z0haloid)
-        R_gal = np.mean(data[data.time==t].r_gal)
+        tmin = np.min(np.abs(np.unique(data.time)-t))
+        R_gal = np.mean(data[data.time==tmin].r_gal)
         print(f'\t R_gal = {R_gal:.2f} kpc')
         
         
