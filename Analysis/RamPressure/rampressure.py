@@ -152,14 +152,14 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         # below code adapted from pynbody.analysis.angmom.sideon() to transform the snapshot so that the vector 'vel' points in the +y direction
         top = s
         print('Centering positions')
-        cen = pynbody.analysis.halo.center(halo, retcen=True)
+        cen = pynbody.analysis.halo.center(sat, retcen=True)
         tx = pynbody.transformation.inverse_translate(top, cen)
         print('Centering velocities')
-        vcen = pynbody.analysis.halo.vel_center(halo, retcen=True) 
+        vcen = pynbody.analysis.halo.vel_center(sat, retcen=True) 
         tx = pynbody.transformation.inverse_v_translate(tx, vcen)
         
         print('Getting velocity vector') 
-        vel = np.average(halo.g['vel'], axis=0, weights=halo.g['mass'])
+        vel = np.average(sat.g['vel'], axis=0, weights=sat.g['mass'])
         vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) # not sure why I'm subtracting the host velocity but leaving it for now
         vel -= vel_host
 
@@ -192,6 +192,8 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         print(f'\t Advanced vel_CGM = {vel_CGM:.2f}')
         print(f'\t Advanced rho_CGM = {rho_CGM:.1e}')
         print(f'\t Advanced P_ram = {Pram:.1e}')
+        
+        print(f'Mean vel of sat gas particles in this transform:', np.linalg.norm(np.mean(sat.g['vel'], axis=0, weights=sat.g['mass'])))
 
         # RESTORING PRESSURE CALCULATIONS
         try:
