@@ -5,6 +5,7 @@ import pickle
 import sys
 import tqdm
 import os
+from bulk import *
 
 hubble =  0.6776942783267969
 
@@ -168,9 +169,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         tx = pynbody.transformation.transform(tx, trans)
         
         # get R_gal from the particletracking code
-        key = str(sim)+'_'+str(z0haloid)
-        path = '../../Data/tracked_particles.hdf5'
-        data = pd.read_hdf(path, key=key)
+        data = read_tracked_particles(sim, z0haloid)
         R_gal = np.mean(data[data.time==t].r_gal)
         print(f'\t R_gal = {R_gal:.2f} kpc')
         
