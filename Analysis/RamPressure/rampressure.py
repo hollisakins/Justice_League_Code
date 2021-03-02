@@ -70,6 +70,16 @@ def get_snap_start(sim,z0haloid):
     return snap_start
 
 
+def vec_to_xform(vec):
+    vec_in = np.asarray(vec)
+    vec_in = vec_in / np.sum(vec_in ** 2).sum() ** 0.5
+    vec_p1 = np.cross([1, 0, 0], vec_in)
+    vec_p1 = vec_p1 / np.sum(vec_p1 ** 2).sum() ** 0.5
+    vec_p2 = np.cross(vec_in, vec_p1)
+    matr = np.concatenate((vec_p2, vec_in, vec_p1)).reshape((3, 3))
+    return matr
+
+
 def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
     output_tot = pd.DataFrame()
     
@@ -111,9 +121,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         rvir = sat.properties['Rvir']/hubble*a
         h1rvir = host.properties['Rvir']/hubble*a
 
-        output['Rvir'] = [rvir]
         output['M_star'] = [M_star]
         output['M_gas'] = [M_gas]
+        output['satRvir'] = [rvir]
         output['hostRvir'] = [h1rvir]
 
         print(f'\t Satellite M_gas = {M_gas:.1e} Msun')
@@ -130,37 +140,48 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['vel_CGM'] = [v_rel_mag]
         output['rho_CGM'] = [rho_CGM]
         output['Pram'] = [Pram]
+        print(f'\t Simple v_rel = {v_rel_mag:.1f}')
         print(f'\t Simple rho_CGM = {rho_CGM:.1e}')
         print(f'\t Simple P_ram = {Pram:.1e}')
 
 
         # RAM PRESSURE CALCULATIONS (ADVANCED)
-
-        # we want to include all gas particles with R/Rvir between 1 and 2 (just outside the satellite)
+        # roughly following the method of Simons et al: using a cylinder in front of the satellite
         # but we want to exclude those that have already been in the satellite
+        
+        # below code adapted from pynbody.analysis.angmom.sideon() to transform the snapshot so that the vector 'vel' points in the +y direction
+        top = s
+        print('Centering positions')
+        cen = pynbody.analysis.halo.center(halo, retcen=True)
+        tx = pynbody.transformation.inverse_translate(top, cen)
+        print('Centering velocities')
+        vcen = pynbody.analysis.halo.vel_center(halo, retcen=True) 
+        tx = pynbody.transformation.inverse_v_translate(tx, vcen)
+        
+        print('Getting velocity vector') 
+        vel = np.average(halo.g['vel'], axis=0, weights=halo.g['mass'])
+        vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) # not sure why I'm subtracting the host velocity but leaving it for now
+        vel -= vel_host
 
-        # center the positions and velocities of the satellite
-        pynbody.analysis.halo.center(sat)
-
-        r_inner = rvir
-        r_outer = 2*rvir
-        inner_sphere = pynbody.filt.Sphere(str(r_inner)+' kpc', [0,0,0])
-        outer_sphere = pynbody.filt.Sphere(str(r_outer)+' kpc', [0,0,0])
-
-        env = s[outer_sphere & ~inner_sphere].gas
-        print(f'\t Identified {len(env)} gas particles to calculate wind properties')
-
+        print('Transforming snapshot')
+        trans = vec_to_xform(vel)
+        tx = pynbody.transformation.transform(tx, trans)
+        
+        # get R_gal from the particletracking code
         key = str(sim)+'_'+str(z0haloid)
         path = '../../Data/tracked_particles.hdf5'
         data = pd.read_hdf(path, key=key)
-        data = data[(data.r_per_Rvir < 1)&(data.time < t)]
-        iords_to_exclude = np.array(data.pid,dtype=int)
+        R_gal = np.mean(data[data.time==t].r_gal)
+        print(f'\t R_gal = {R_gal:.2f} kpc')
+        
+        
+        radius = 2*R_gal
+        height = 0.25 * radius
+        center = (0, rvir + height/2, 0)
+        wind_filt = pynbody.filt.Disc(radius, height, cen=center)
+        env = s[wind_filt].g
+        print(f'\t Identified {len(env)} gas particles to calculate wind properties')
 
-        exclude = np.isin(env['iord'], iords_to_exclude)
-        env = env[~exclude]
-        print(f'\t Reduced to {len(env)} particles by excluding those that were prev. in sat')
-
-        # since satellite is centered, this is vel relative to satellite 
         vel_CGM = np.linalg.norm(np.average(env['vel'],axis=0,weights=env['mass']))
         rho_CGM = np.average(env['rho'], weights=env['mass'])
         Pram = rho_CGM * vel_CGM * vel_CGM
@@ -168,30 +189,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['rho_CGM_adv'] = [rho_CGM]
         output['Pram_adv'] = [Pram]
 
+        print(f'\t Advanced vel_CGM = {vel_CGM:.2f}')
         print(f'\t Advanced rho_CGM = {rho_CGM:.1e}')
         print(f'\t Advanced P_ram = {Pram:.1e}')
-
-
-        # DIFFERENTIAL TIDAL FORCE CALCULATIONS
-        # it would not be simple to calculate the differential tidal for DeltaF, since that would be the force on a small 
-        # bit of mass dm
-        # instead we will calculated the Roche Limit, the radius at which the satellite would be tidally disrupted
-
-        # unsure what delta_r to choose. for now using Rvir
-        Delta_r = 0.2*rvir
-        sat_sphere = pynbody.filt.Sphere(str(Delta_r)+' kpc', [0,0,0])
-        m_sat_enc = np.sum(sat[sat_sphere]['mass'].in_units('Msol'))
-        host_sphere = pynbody.filt.Sphere(str(h1dist)+' kpc', [0,0,0])
-        M_host_enc = np.sum(host[host_sphere]['mass'].in_units('Msol'))
-
-        r_R = (2*M_host_enc / m_sat_enc)**(1/3) * Delta_r
-        output['M_host_enc'] = [M_host_enc]
-        output['m_sat_enc'] = [m_sat_enc]
-        output['r_R'] = [r_R]
-
-        print(f'\t Roche limit r_R = {r_R:.2f} kpc')
-        print(f'\t Host R_vir = {h1rvir:.2f} kpc')
-
 
         # RESTORING PRESSURE CALCULATIONS
         try:
@@ -236,6 +236,7 @@ if __name__ == '__main__':
     if len(haloids) >= snap_start:
         filepaths = np.flip(filepaths[:snap_start+1])
         haloids = np.flip(haloids[:snap_start+1])
+        h1ids = np.flip(h1ids[:snap_start+1])
 
     output_tot = calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids)
     output_tot.to_hdf('../../Data/ram_pressure.hdf5',key=f'{sim}_{z0haloid}')
