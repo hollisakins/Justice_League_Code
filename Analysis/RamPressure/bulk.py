@@ -114,13 +114,35 @@ def calc_angles(d):
         
     return d
 
-def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
+
+
+def calc_angles_tidal(d):
+    # get gas particle velocity
+    v = np.array([d.vx,d.vy,d.vz])
+
+    # instead of CGM velocity, get vector pointing from satellite to host (i.e. host position in the satellite rest frame) 
+    r_sat =np.array([d.sat_Xc,d.sat_Yc,d.sat_Zc])
+    r_host = np.array([d.host_Xc,d.host_Yc,d.host_Zc])
+    r_rel = r_host - r_sat
+
+    # take the dot product and get the angle, in degrees
+    v_hat = v / np.linalg.norm(v)
+    r_rel_hat = r_rel / np.linalg.norm(r_rel)
+    angle = np.arccos(np.dot(v_hat,r_rel_hat)) * 180/np.pi
+
+    d['angle_tidal'] = angle
+        
+    return d
+
+
+def calc_ejected_expelled_accreted(sim, haloid, save=True, verbose=True):
     import tqdm
     data = read_tracked_particles(sim, haloid, verbose=verbose)
 
     if verbose: print(f'Now computing ejected/expelled particles for {sim}-{haloid}...')
     ejected = pd.DataFrame()
     expelled = pd.DataFrame()
+    accreted = pd.DataFrame()
 
     pids = np.unique(data.pid)
     for pid in tqdm.tqdm(pids):
@@ -142,7 +164,14 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
 
         for i,t2 in enumerate(time[1:]):
                 i += 1
-                # t1 = time[i-1]
+                if (cool_halo[i-1] or hot_halo[i-1]) and cool_disk[i]:
+                    out = dat[time==t2].copy()
+                    out['state2'] = 'cool_disk'
+                    accreted = pd.concat([accreted, out])
+                if (cool_halo[i-1] or hot_halo[i-1]) and hot_disk[i]:
+                    out = dat[time==t2].copy()
+                    out['state2'] = 'hot_disk'
+                    accreted = pd.concat([accreted, out])
                 
                 if cool_disk[i-1] and (cool_halo[i] or hot_halo[i]):
                     state1 = 'cool disk'
@@ -181,6 +210,12 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
     print('Calculating expulsion angles')
     expelled = expelled.apply(calc_angles, axis=1)
     
+    # apply the calc_angles function along the rows of ejected and expelled
+    print('Calculating ejection angles (for tidal force)')
+    ejected = ejected.apply(calc_angles_tidal, axis=1)
+    print('Calculating expulsion angles (for tidal force)')
+    expelled = expelled.apply(calc_angles_tidal, axis=1)
+    
     if save:
         key = f'{sim}_{str(int(haloid))}'
         filepath = '../../Data/ejected_particles.hdf5'
@@ -190,28 +225,42 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
         filepath = '../../Data/expelled_particles.hdf5'
         print(f'Saving {key} expelled particle dataset to {filepath}')
         expelled.to_hdf(filepath, key=key)
+                
+        filepath = '../../Data/accreted_particles.hdf5'
+        print(f'Saving {key} accreted particle dataset to {filepath}')
+        accreted.to_hdf(filepath, key=key)
         
         
-    print(f'Returning both datasets...')
+    print(f'Returning (ejected, expelled, accreted) datasets...')
 
-    return ejected, expelled
+    return ejected, expelled, accreted
         
 
-def read_ejected_expelled(sim, haloid):
+def read_ejected_expelled_accreted(sim, haloid):
     key = f'{sim}_{str(int(haloid))}'
     ejected = pd.read_hdf('../../Data/ejected_particles.hdf5', key=key)
     expelled = pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)
-    print(f'Returning ejected,expelled for {sim}-{haloid}...')
-    return ejected, expelled
+    expelled = pd.read_hdf('../../Data/accreted_particles.hdf5', key=key)
+    print(f'Returning (ejected, expelled, accreted) for {sim}-{haloid}...')
+    return ejected, expelled, accreted
         
     
-def read_all_ejected_expelled():
+def read_all_ejected_expelled_accreted():
     ejected = pd.DataFrame()
     expelled = pd.DataFrame()
+    accreted = pd.DataFrame()
     keys = get_keys()
     for key in keys:
-        ejected = pd.concat([ejected, pd.read_hdf('../../Data/ejected_particles.hdf5', key=key)])
-        expelled = pd.concat([expelled, pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)])
-    print(f'Returning ejected,expelled for all available satellites...')
-    return ejected, expelled
+        ejected1 = pd.read_hdf('../../Data/ejected_particles.hdf5', key=key)
+        ejected1['key'] = key
+        ejected = pd.concat([ejected, ejected1])
+        expelled1 = pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)
+        expelled1['key'] = key
+        expelled = pd.concat([expelled, expelled1])
+        accreted1 = pd.read_hdf('../../Data/accreted_particles.hdf5', key=key)
+        accreted1['key'] = key
+        accreted = pd.concat([accreted, accreted1])
+
+    print(f'Returning (ejected, expelled, accreted) for all available satellites...')
+    return ejected, expelled, accreted
 
