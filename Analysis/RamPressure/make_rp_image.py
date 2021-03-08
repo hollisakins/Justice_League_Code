@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import pickle
 from bulk import *
+import sys
+
+sim = str(sys.argv[1])
+haliod = int(sys.argv[2])
+
+#if sim=='h148' and haloid==68:
+    
+
 
 mpl.rc('font',**{'family':'serif','monospace':['Palatino']})
 mpl.rc('text', usetex=True)
@@ -13,9 +21,8 @@ mpl.rcParams.update({'font.size': 9})
 age = 13.800797497330507
 hubble =  0.6776942783267969
 
-sim = 'h242'
-haloid = 80
-filepaths, haloids, h1ids = get_filepaths_haloids(sim,haloid)
+from particletracking import get_stored_filepaths_haloids as g
+filepaths, haloids, h1ids = g(sim,haloid)
 path = filepaths[0]
 print('Loading',path)
 
@@ -24,7 +31,7 @@ s.physical_units()
 h = s.halos()
 
 print('Centering halo 1')
-pynbody.analysis.angmom.center(h[1])
+pynbody.analysis.halo.center(h[1])
 
 
 fig = plt.figure(dpi=300, figsize=(7,3), constrained_layout=True)
@@ -35,19 +42,24 @@ ax = [ax0,ax1]
 
 a = float(s.properties['a'])
 host_Rvir = h[1].properties['Rvir'] / hubble * a
-width = round(2.8*host_Rvir, 1)
+width = round(2.4*host_Rvir, 1)
+
+filt = pynbody.filt.Cuboid(x1='-500 kpc', y1='-500 kpc', z1='-20 kpc', x2='500 kpc', y2='500 kpc', z2='20 kpc')
 
 print('Making gas image')    
-im = pynbody.plot.sph.velocity_image(s.g, 
+im = pynbody.plot.sph.velocity_image(s[filt].g, 
                                      width=f'{width:.1f} kpc', # set to 2.8 Rvir
-                                     cmap='viridis'
+                                     cmap='cubehelix',
                                      vector_color = 'cyan', 
-                                     vector_resolution = 15, 
-                                     av_z = False, # don't average: we want a slice 
+                                     vector_resolution = 30,
+                                     scale = 4000*pynbody.units.Unit('km s**-1'),
+                                     av_z = 'rho', # slicing manually
                                      ret_im=True, denoise=False, approximate_fast=False, subplot=ax[0], show_cbar=False, quiverkey=False)
 
+#plt.colorbar(
+
 print('Plotting circle')
-circ = plt.Circle((0,0), host_Rvir, color = '0.7', linestyle='-', fill=False, linewidth=1)
+circ = plt.Circle((0,0), host_Rvir, color = 'w', linestyle='-', fill=False, linewidth=1)
 ax[0].add_artist(circ)
 
 print('Plotting satellite orbit')
@@ -58,8 +70,8 @@ for t in np.unique(data.time):
     d = data[data.time==t]
     x = np.mean(d.sat_Xc) - np.mean(d.host_Xc)
     y = np.mean(d.sat_Yc) - np.mean(d.host_Yc)
-    X = np.append(X,x)
-    Y = np.appedn(Y,y)
+    X = np.append(X,x/hubble*a)
+    Y = np.append(Y,y/hubble*a)
     
 ax[0].plot(X,Y, color='w', linestyle='--')
 
@@ -67,7 +79,7 @@ ax[0].set_xlabel(r'$x$ [kpc]')
 ax[0].set_ylabel(r'$y$ [kpc]')
 
 print('Plotting ram pressure')
-data = pd.read_hdf('../../ram_pressure.hdf5', key=f'{sim}_{str(haloid)}')
+data = pd.read_hdf('../../Data/ram_pressure.hdf5', key=f'{sim}_{str(haloid)}')
 x = np.array(data.t,dtype=float)
 y = np.array(data.Pram,dtype=float)/np.array(data.Prest,dtype=float)
 ax[1].plot(x,y, label='Spherically-averaged CGM', color='k', linestyle='--')
@@ -81,6 +93,6 @@ ax[1].semilogy()
 ax[1].set_xlabel('Time [Gyr]')
 ax[1].set_ylabel(r'$\mathcal{P} \equiv P_{\rm ram}/P_{\rm rest}$')
 
-plt.savefig('figures/ram_pressure.pdf')
+plt.savefig(f'ram_pressure_{sim}_{str(haloid)}.pdf')
 plt.close()
     
