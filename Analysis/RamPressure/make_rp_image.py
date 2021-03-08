@@ -59,21 +59,39 @@ im = pynbody.plot.sph.velocity_image(s[filt].g,
 #plt.colorbar(
 
 print('Plotting circle')
-circ = plt.Circle((0,0), host_Rvir, color = 'w', linestyle='-', fill=False, linewidth=1)
+circ = plt.Circle((0,0), host_Rvir, color = 'w', linestyle=':', fill=False, linewidth=1)
 ax[0].add_artist(circ)
 
 print('Plotting satellite orbit')
 data = read_tracked_particles(sim, haloid)
 X = np.array([])
 Y = np.array([])
-for t in np.unique(data.time):
+Z = np.array([])
+time = np.unique(data.time)
+for t in time:
     d = data[data.time==t]
     x = np.mean(d.sat_Xc) - np.mean(d.host_Xc)
     y = np.mean(d.sat_Yc) - np.mean(d.host_Yc)
+    z = np.mean(d.sat_Zc) - np.mean(d.host_Zc)
     X = np.append(X,x/hubble*a)
     Y = np.append(Y,y/hubble*a)
+    Z = np.append(Z,z/hubble*a)
+
+print('Performing spline fits...')
+tnew = np.linspace(np.min(time), np.max(time), 1000)
+from scipy.interpolate import UnivariateSpline
+sX, sY, sZ = UnivariateSpline(time, X), UnivariateSpline(time, Y), UnivariateSpline(time, Z)
+Xnew, Ynew, Znew = sX(tnew), sY(tnew), sZ(tnew)
     
-ax[0].plot(X,Y, color='w', linestyle='--')
+from matplotlib.collections import LineCollection
+points = np.array([Xnew, Ynew]).T.reshape(-1, 1, 2)
+lwidths = -(Znew - max(Znew))/100 + 1
+segments = np.concatenate([points[:-1], points[1:]], axis=1)
+lc = LineCollection(segments, linewidths=lwidths,color='w')
+ax[0].add_collection(lc)
+
+ax[0].arrow(Xnew[-2], Ynew[-2], Xnew[-1]-Xnew[-2], Ynew[-1]-Ynew[-2], width=lwidths[-1]+3, color='w', length_includes_head=False, head_length=15)
+    
 
 ax[0].set_xlabel(r'$x$ [kpc]')
 ax[0].set_ylabel(r'$y$ [kpc]')
