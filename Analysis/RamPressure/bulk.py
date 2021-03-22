@@ -25,6 +25,13 @@ def read_tracked_particles(sim, haloid, verbose=False):
     path = '../../Data/tracked_particles.hdf5'
     data = pd.read_hdf(path, key=key)
     
+    time = np.unique(data.time)
+    dt = time[1:]-time[:-1]
+    dt = np.append(dt[0], dt)
+    dt = dt[np.unique(data.time, return_inverse=True)[1]]
+    data['dt'] = dt
+    
+    
     if verbose: print('Successfully loaded')
     
     r_gal = np.array([])
@@ -144,7 +151,7 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
     cooled = pd.DataFrame()
     expelled = pd.DataFrame()
     accreted = pd.DataFrame()
-
+    
     pids = np.unique(data.pid)
     for pid in tqdm.tqdm(pids):
         dat = data[data.pid==pid]
