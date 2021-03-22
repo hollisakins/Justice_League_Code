@@ -135,12 +135,13 @@ def calc_angles_tidal(d):
     return d
 
 
-def calc_ejected_expelled_accreted(sim, haloid, save=True, verbose=True):
+def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
     import tqdm
     data = read_tracked_particles(sim, haloid, verbose=verbose)
 
     if verbose: print(f'Now computing ejected/expelled particles for {sim}-{haloid}...')
     ejected = pd.DataFrame()
+    cooled = pd.DataFrame()
     expelled = pd.DataFrame()
     accreted = pd.DataFrame()
 
@@ -167,10 +168,14 @@ def calc_ejected_expelled_accreted(sim, haloid, save=True, verbose=True):
                 if (cool_halo[i-1] or hot_halo[i-1]) and cool_disk[i]:
                     out = dat[time==t2].copy()
                     out['state2'] = 'cool_disk'
-                    accreted = pd.concat([accreted, out])
+                    cooled = pd.concat([cooled, out])
                 if (cool_halo[i-1] or hot_halo[i-1]) and hot_disk[i]:
                     out = dat[time==t2].copy()
                     out['state2'] = 'hot_disk'
+                    cooled = pd.concat([cooled, out])
+                    
+                if (host_halo[i-1] or IGM[i-1]) and (cool_halo[i] or hot_halo[i]):
+                    out = dat[time==t2].copy()
                     accreted = pd.concat([accreted, out])
                 
                 if cool_disk[i-1] and (cool_halo[i] or hot_halo[i]):
@@ -221,6 +226,10 @@ def calc_ejected_expelled_accreted(sim, haloid, save=True, verbose=True):
         filepath = '../../Data/ejected_particles.hdf5'
         print(f'Saving {key} ejected particle dataset to {filepath}')
         ejected.to_hdf(filepath, key=key)
+        
+        filepath = '../../Data/cooled_particles.hdf5'
+        print(f'Saving {key} cooled particle dataset to {filepath}')
+        ejected.to_hdf(filepath, key=key)
 
         filepath = '../../Data/expelled_particles.hdf5'
         print(f'Saving {key} expelled particle dataset to {filepath}')
@@ -231,22 +240,24 @@ def calc_ejected_expelled_accreted(sim, haloid, save=True, verbose=True):
         accreted.to_hdf(filepath, key=key)
         
         
-    print(f'Returning (ejected, expelled, accreted) datasets...')
+    print(f'Returning (ejected, cooled, expelled, accreted) datasets...')
 
-    return ejected, expelled, accreted
+    return ejected, cooled, expelled, accreted
         
 
-def read_ejected_expelled_accreted(sim, haloid):
+def read_ejected_expelled(sim, haloid):
     key = f'{sim}_{str(int(haloid))}'
     ejected = pd.read_hdf('../../Data/ejected_particles.hdf5', key=key)
+    cooled = pd.read_hdf('../../Data/cooled_particles.hdf5', key=key)
     expelled = pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)
-    expelled = pd.read_hdf('../../Data/accreted_particles.hdf5', key=key)
-    print(f'Returning (ejected, expelled, accreted) for {sim}-{haloid}...')
-    return ejected, expelled, accreted
+    accreted = pd.read_hdf('../../Data/accreted_particles.hdf5', key=key)
+    print(f'Returning (ejected, cooled, expelled, accreted) for {sim}-{haloid}...')
+    return ejected, cooled, expelled, accreted
         
     
-def read_all_ejected_expelled_accreted():
+def read_all_ejected_expelled():
     ejected = pd.DataFrame()
+    cooled = pd.DataFrame()
     expelled = pd.DataFrame()
     accreted = pd.DataFrame()
     keys = get_keys()
@@ -254,6 +265,9 @@ def read_all_ejected_expelled_accreted():
         ejected1 = pd.read_hdf('../../Data/ejected_particles.hdf5', key=key)
         ejected1['key'] = key
         ejected = pd.concat([ejected, ejected1])
+        cooled1 = pd.read_hdf('../../Data/cooled_particles.hdf5', key=key)
+        cooled1['key'] = key
+        cooled = pd.concat([cooled, cooled1])
         expelled1 = pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)
         expelled1['key'] = key
         expelled = pd.concat([expelled, expelled1])
@@ -261,6 +275,6 @@ def read_all_ejected_expelled_accreted():
         accreted1['key'] = key
         accreted = pd.concat([accreted, accreted1])
 
-    print(f'Returning (ejected, expelled, accreted) for all available satellites...')
-    return ejected, expelled, accreted
+    print(f'Returning (ejected, cooled, expelled, accreted) for all available satellites...')
+    return ejected, cooled, expelled, accreted
 
