@@ -34,57 +34,69 @@ def read_tracked_particles(sim, haloid, verbose=False):
     
     if verbose: print('Successfully loaded')
     
-    r_gal = np.array([])
-    for t in np.unique(data.time):
-        d = data[data.time==t]
-        r_gas = np.mean(d.sat_r_gas)
-        r_half = np.mean(d.sat_r_half)
-        rg = np.max([r_gas,r_half])
+#     r_gal = np.array([])
+#     for t in np.unique(data.time):
+#         d = data[data.time==t]
+#         r_gas = np.mean(d.sat_r_gas)
+#         r_half = np.mean(d.sat_r_half)
+#         rg = np.max([r_gas,r_half])
 
-        if np.isnan(rg):
-            rg = r_gal_prev
+#         if np.isnan(rg):
+#             rg = r_gal_prev
 
-        if verbose: print(f't = {t:1f} Gyr, satellite R_gal = {rg:.2f} kpc')
-        r_gal = np.append(r_gal,[rg]*len(d))
+#         if verbose: print(f't = {t:1f} Gyr, satellite R_gal = {rg:.2f} kpc')
+#         r_gal = np.append(r_gal,[rg]*len(d))
 
-        r_gal_prev = rg
+#         r_gal_prev = rg
 
-    data['r_gal'] = r_gal
+#     data['r_gal'] = r_gal
     
-    r_gal_prev = 0
-    r_gal = np.array([])
-    for t in np.unique(data.time):
-        d = data[data.time==t]
-        r_gas = np.mean(d.host_r_gas)
-        r_half = np.mean(d.host_r_half)
-        rg = np.max([r_gas,r_half])
+#     r_gal_prev = 0
+#     r_gal = np.array([])
+#     for t in np.unique(data.time):
+#         d = data[data.time==t]
+#         r_gas = np.mean(d.host_r_gas)
+#         r_half = np.mean(d.host_r_half)
+#         rg = np.max([r_gas,r_half])
 
-        if np.isnan(rg):
-            rg = r_gal_prev
+#         if np.isnan(rg):
+#             rg = r_gal_prev
 
-        if verbose: print(f't = {t:1f} Gyr, host R_gal = {rg:.2f} kpc')
-        r_gal = np.append(r_gal,[rg]*len(d))
+#         if verbose: print(f't = {t:1f} Gyr, host R_gal = {rg:.2f} kpc')
+#         r_gal = np.append(r_gal,[rg]*len(d))
 
-        r_gal_prev = rg
+#         r_gal_prev = rg
 
-    data['host_r_gal'] = r_gal
+#     data['host_r_gal'] = r_gal
     
     thermo_disk = (np.array(data.temp) < 1.2e4) & (np.array(data.rho) > 0.1)
     
     in_sat = np.array(data.in_sat)
-    sat_disk = in_sat & (np.array(data.r) <= np.array(data.r_gal))
-    sat_halo = in_sat & (np.array(data.r) > np.array(data.r_gal))
-    sat_cool_disk = sat_disk & thermo_disk
-    sat_hot_disk = sat_disk & ~thermo_disk
-    sat_cool_halo = sat_halo & thermo_disk
-    sat_hot_halo = sat_halo & ~thermo_disk
-
-    in_host = np.array(data.in_host) & ~in_sat
-    host_disk = in_host & (np.array(data.r_rel_host) <= np.array(data.host_r_gal))
-    host_halo = in_host & (np.array(data.r_rel_host) > np.array(data.host_r_gal))
-
     other_sat = np.array(data.in_other_sat)
+    in_host = np.array(data.in_host) & ~in_sat & ~other_sat
+    
+    sat_disk = in_sat & thermo_disk
+    sat_halo = in_sat & ~thermo_disk
+    
+    host_disk = in_host & thermo_disk
+    host_halo = in_host & ~thermo_disk
+    
     IGM = np.array(data.in_IGM)
+    
+    
+#    sat_disk = in_sat & (np.array(data.r) <= np.array(data.r_gal))
+#     sat_halo = in_sat & (np.array(data.r) > np.array(data.r_gal))
+#     sat_cool_disk = sat_disk & thermo_disk
+#     sat_hot_disk = sat_disk & ~thermo_disk
+#     sat_cool_halo = sat_halo & thermo_disk
+#     sat_hot_halo = sat_halo & ~thermo_disk
+
+#     in_host = np.array(data.in_host) & ~in_sat
+#     host_disk = in_host & (np.array(data.r_rel_host) <= np.array(data.host_r_gal))
+#     host_halo = in_host & (np.array(data.r_rel_host) > np.array(data.host_r_gal))
+
+#     other_sat = np.array(data.in_other_sat)
+#     IGM = np.array(data.in_IGM)
     
     
     # basic classifications
@@ -96,10 +108,10 @@ def read_tracked_particles(sim, haloid, verbose=False):
     data['IGM'] = IGM
     
     # more advanced classifications
-    data['cool_disk'] = sat_cool_disk
-    data['hot_disk'] = sat_hot_disk
-    data['cool_halo'] = sat_cool_halo
-    data['hot_halo'] = sat_hot_halo
+    #data['cool_disk'] = sat_cool_disk
+    #data['hot_disk'] = sat_hot_disk
+    #data['cool_halo'] = sat_cool_halo
+    #data['hot_halo'] = sat_hot_halo
 
     return data
 
@@ -156,10 +168,13 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
     for pid in tqdm.tqdm(pids):
         dat = data[data.pid==pid]
 
-        cool_disk = np.array(dat.cool_disk, dtype=bool)
-        hot_disk = np.array(dat.hot_disk, dtype=bool)
-        cool_halo = np.array(dat.cool_halo, dtype=bool)
-        hot_halo = np.array(dat.hot_halo, dtype=bool)
+#         cool_disk = np.array(dat.cool_disk, dtype=bool)
+#         hot_disk = np.array(dat.hot_disk, dtype=bool)
+#         cool_halo = np.array(dat.cool_halo, dtype=bool)
+#         hot_halo = np.array(dat.hot_halo, dtype=bool)
+
+        sat_disk = np.array(dat.sat_disk, dtype=bool)
+        sat_halo = np.array(dat.sat_halo, dtype=bool)
 
         host_halo = np.array(dat.host_halo, dtype=bool)
         host_disk = np.array(dat.host_disk, dtype=bool)
@@ -167,53 +182,25 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
         other_sat = np.array(dat.other_sat, dtype=bool)
         
         time = np.array(dat.time,dtype=float)
-        
-        can_be_expelled = False
+
 
         for i,t2 in enumerate(time[1:]):
                 i += 1
-                if (cool_halo[i-1] or hot_halo[i-1]) and cool_disk[i]:
+                if sat_halo[i-1] and sat_disk[i]:
                     out = dat[time==t2].copy()
-                    out['state2'] = 'cool_disk'
-                    cooled = pd.concat([cooled, out])
-                if (cool_halo[i-1] or hot_halo[i-1]) and hot_disk[i]:
-                    out = dat[time==t2].copy()
-                    out['state2'] = 'hot_disk'
                     cooled = pd.concat([cooled, out])
                     
-                if (host_halo[i-1] or IGM[i-1]) and (cool_halo[i] or hot_halo[i]):
+                if (host_halo[i-1] or IGM[i-1] or host_disk[i-1]) and sat_halo[i]:
                     out = dat[time==t2].copy()
                     accreted = pd.concat([accreted, out])
                 
-                if cool_disk[i-1] and (cool_halo[i] or hot_halo[i]):
-                    state1 = 'cool disk'
+                if sat_disk[i-1] and sat_halo[i]:
                     out = dat[time==t2].copy()
-                    out['state1'] = state1
                     ejected = pd.concat([ejected, out])
-                    can_be_expelled = True
-                elif hot_disk[i-1] and (cool_halo[i] or hot_halo[i]):
-                    state1 = 'hot disk'
+                    
+                if sat_halo[i-1] and (host_halo[i] or host_disk[i] or IGM[i]):    
                     out = dat[time==t2].copy()
-                    out['state1'] = state1
-                    ejected = pd.concat([ejected, out])
-                    can_be_expelled = True
-                
-                if can_be_expelled:
-                    if (cool_halo[i-1] or hot_halo[i-1]) and host_halo[i]:    
-                        state2 = 'host halo'
-                        out = dat[time==t2].copy()
-                        out['state2'] = state2
-                        expelled = pd.concat([expelled, out])
-                    if (cool_halo[i-1] or hot_halo[i-1]) and host_disk[i]:    
-                        state2 = 'host disk'
-                        out = dat[time==t2].copy()
-                        out['state2'] = state2
-                        expelled = pd.concat([expelled, out])
-                    if (cool_halo[i-1] or hot_halo[i-1]) and IGM[i]:    
-                        state2 = 'IGM'
-                        out = dat[time==t2].copy()
-                        out['state2'] = state2
-                        expelled = pd.concat([expelled, out])
+                    expelled = pd.concat([expelled, out])
 
 
     # apply the calc_angles function along the rows of ejected and expelled
@@ -236,7 +223,7 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
         
         filepath = '../../Data/cooled_particles.hdf5'
         print(f'Saving {key} cooled particle dataset to {filepath}')
-        ejected.to_hdf(filepath, key=key)
+        cooled.to_hdf(filepath, key=key)
 
         filepath = '../../Data/expelled_particles.hdf5'
         print(f'Saving {key} expelled particle dataset to {filepath}')
