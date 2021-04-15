@@ -160,7 +160,11 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         tx = pynbody.transformation.inverse_v_translate(tx, vcen)
         
         print('Getting velocity vector') 
-        vel = np.average(sat.g['vel'], axis=0, weights=sat.g['mass'])
+        try:
+            vel = np.average(sat.g['vel'], axis=0, weights=sat.g['mass'])
+        except ZeroDivisionError:
+            vel = np.average(sat.s['vel'], axis=0, weigths=sat.s['mass'])
+            
         vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) # not sure why I'm subtracting the host velocity but leaving it for now
         vel -= vel_host
 
@@ -181,9 +185,13 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         wind_filt = pynbody.filt.Disc(radius, height, cen=center)
         env = s[wind_filt].g
         print(f'\t Identified {len(env)} gas particles to calculate wind properties')
+        output['n_CGM'] = [len(env)]
 
-        vel_CGM = np.linalg.norm(np.average(env['vel'],axis=0,weights=env['mass']))
-        rho_CGM = np.average(env['rho'], weights=env['mass'])
+        try:
+            vel_CGM = np.linalg.norm(np.average(env['vel'],axis=0,weights=env['mass']))
+            rho_CGM = np.average(env['rho'], weights=env['mass'])
+        except ZeroDivisionError:
+            vel_CGM, rho_CGM = 0, 0
         Pram = rho_CGM * vel_CGM * vel_CGM
         output['vel_CGM_adv'] = [vel_CGM]
         output['rho_CGM_adv'] = [rho_CGM]
@@ -193,7 +201,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         print(f'\t Advanced rho_CGM = {rho_CGM:.1e}')
         print(f'\t Advanced P_ram = {Pram:.1e}')
         
-        print(f'Mean vel of sat gas particles in this transform:', np.linalg.norm(np.mean(sat.g['vel'], axis=0, weights=sat.g['mass'])))
+        #print(f'Mean vel of sat gas particles in this transform:', np.linalg.norm(np.mean(sat.g['vel'], axis=0, weights=sat.g['mass'])))
 
         # RESTORING PRESSURE CALCULATIONS
         try:
