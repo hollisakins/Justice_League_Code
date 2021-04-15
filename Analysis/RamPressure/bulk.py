@@ -34,40 +34,40 @@ def read_tracked_particles(sim, haloid, verbose=False):
     
     if verbose: print('Successfully loaded')
     
-#     r_gal = np.array([])
-#     for t in np.unique(data.time):
-#         d = data[data.time==t]
-#         r_gas = np.mean(d.sat_r_gas)
-#         r_half = np.mean(d.sat_r_half)
-#         rg = np.max([r_gas,r_half])
+    r_gal = np.array([])
+    for t in np.unique(data.time):
+        d = data[data.time==t]
+        r_gas = np.mean(d.sat_r_gas)
+        r_half = np.mean(d.sat_r_half)
+        rg = np.max([r_gas,r_half])
 
-#         if np.isnan(rg):
-#             rg = r_gal_prev
+        if np.isnan(rg):
+            rg = r_gal_prev
 
-#         if verbose: print(f't = {t:1f} Gyr, satellite R_gal = {rg:.2f} kpc')
-#         r_gal = np.append(r_gal,[rg]*len(d))
+        if verbose: print(f't = {t:1f} Gyr, satellite R_gal = {rg:.2f} kpc')
+        r_gal = np.append(r_gal,[rg]*len(d))
 
-#         r_gal_prev = rg
+        r_gal_prev = rg
 
-#     data['r_gal'] = r_gal
+    data['r_gal'] = r_gal
     
-#     r_gal_prev = 0
-#     r_gal = np.array([])
-#     for t in np.unique(data.time):
-#         d = data[data.time==t]
-#         r_gas = np.mean(d.host_r_gas)
-#         r_half = np.mean(d.host_r_half)
-#         rg = np.max([r_gas,r_half])
+    r_gal_prev = 0
+    r_gal = np.array([])
+    for t in np.unique(data.time):
+        d = data[data.time==t]
+        r_gas = np.mean(d.host_r_gas)
+        r_half = np.mean(d.host_r_half)
+        rg = np.max([r_gas,r_half])
 
-#         if np.isnan(rg):
-#             rg = r_gal_prev
+        if np.isnan(rg):
+            rg = r_gal_prev
 
-#         if verbose: print(f't = {t:1f} Gyr, host R_gal = {rg:.2f} kpc')
-#         r_gal = np.append(r_gal,[rg]*len(d))
+        if verbose: print(f't = {t:1f} Gyr, host R_gal = {rg:.2f} kpc')
+        r_gal = np.append(r_gal,[rg]*len(d))
 
-#         r_gal_prev = rg
+        r_gal_prev = rg
 
-#     data['host_r_gal'] = r_gal
+    data['host_r_gal'] = r_gal
     
     thermo_disk = (np.array(data.temp) < 1.2e4) & (np.array(data.rho) > 0.1)
     

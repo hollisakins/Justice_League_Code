@@ -180,7 +180,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         
         
         radius = 2*R_gal
-        height = 0.25 * radius
+        height = 0.75 * radius
         center = (0, rvir + height/2, 0)
         wind_filt = pynbody.filt.Disc(radius, height, cen=center)
         env = s[wind_filt].g
