@@ -107,7 +107,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         r_rel = r_sat - r_host
         h1dist = np.linalg.norm(r_rel)
         output['h1dist'] = [h1dist]
-        print(f'\t {sim}-{z0haloid}: Distance from host = {h1dist:.2f} kpc')
+        print(f'\n\t {sim}-{z0haloid}: Distance from host = {h1dist:.2f} kpc')
         
         v_sat = np.array([sat.properties[k] for k in ['VXc','VYc','VZc']])
         v_host = np.array([host.properties[k] for k in ['VXc','VYc','VZc']])
@@ -179,7 +179,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
 #         print(f'\t {sim}-{z0haloid}:  R_gal = {R_gal:.2f} kpc')
         
         
-        radius = 0.33*rvir
+        radius = 0.5*rvir
         height = 0.75 * radius
         center = (0, rvir + height/2, 0)
         wind_filt = pynbody.filt.Disc(radius, height, cen=center)
@@ -210,6 +210,8 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         except: 
             calc_rest = False
             Prest = 0.
+            SigmaGas = 0.
+            dphidz = 0.
         
         if calc_rest:
             p = pynbody.analysis.profile.Profile(s.g, min=0.01, max=rvir, ndim=3)
@@ -224,6 +226,8 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         print(f'\t {sim}-{z0haloid}:  Prest = {Prest:.1e}')
 
         output['Prest'] = [Prest]
+        output['SigmaGas'] = [SigmaGas]
+        output['dphidz'] = [dphidz]
 
 
         output_tot = pd.concat([output_tot, output])
