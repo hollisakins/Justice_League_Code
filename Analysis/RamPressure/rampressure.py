@@ -179,9 +179,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         print(f'\t R_gal = {R_gal:.2f} kpc')
         
         
-        radius = 2*R_gal
-        height = 0.75 * radius
-        center = (0, rvir + height/2, 0)
+        radius = f'{2*R_gal:.2f} kpc'
+        height = f'{0.75 * radius:.2f} kpc'
+        center = ('0 kpc', f'{rvir + height/2:.2f} kpc', '0 kpc')
         wind_filt = pynbody.filt.Disc(radius, height, cen=center)
         env = s[wind_filt].g
         print(f'\t Identified {len(env)} gas particles to calculate wind properties')
