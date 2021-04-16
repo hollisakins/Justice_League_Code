@@ -50,7 +50,7 @@ def read_timesteps(simname):
     return data
 
 def get_snap_start(sim,z0haloid):
-    print('Getting starting snapshot (dist = 2 Rvir)')
+    print(f'\t {sim}-{z0haloid}: Getting starting snapshot (dist = 2 Rvir)')
     filepaths,haloids,h1ids = get_stored_filepaths_haloids(sim,z0haloid)
     ts = read_timesteps(sim)
     ts = ts[ts.z0haloid == z0haloid]
@@ -67,7 +67,7 @@ def get_snap_start(sim,z0haloid):
             break
         else: 
             continue
-    print(f'Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!
+    print(f'\t {sim}-{z0haloi}: Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!
     return snap_start
 
 
@@ -84,7 +84,7 @@ def vec_to_xform(vec):
 def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
     output_tot = pd.DataFrame()
     
-    print('Starting calculations...')
+    #print('Starting calculations...')
     for f,haloid,h1id in tqdm.tqdm(zip(filepaths,haloids,h1ids),total=len(filepaths)):
         s = pynbody.load(f)
         s.physical_units()
@@ -97,7 +97,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output = pd.DataFrame()
         output['t'] = [t]
         output['a'] = [a]
-        print(f'\n\t Time = {t:.1f} Gyr')
+        #print(f'\n\t Time = {t:.1f} Gyr')
 
         # RAM PRESSURE CALCULATIONS (SIMPLE)
 
@@ -107,14 +107,14 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         r_rel = r_sat - r_host
         h1dist = np.linalg.norm(r_rel)
         output['h1dist'] = [h1dist]
-        print(f'\t Distance from host = {h1dist:.2f} kpc')
+        print(f'\t {sim}-{z0haloid}: Distance from host = {h1dist:.2f} kpc')
         
         v_sat = np.array([sat.properties[k] for k in ['VXc','VYc','VZc']])
         v_host = np.array([host.properties[k] for k in ['VXc','VYc','VZc']])
         v_rel = v_sat - v_host
         v_rel_mag = np.linalg.norm(v_rel)
 
-        print(f'\t Relative velocity = {v_rel_mag:.2f} km/s')
+        print(f'\t {sim}-{z0haloid}: Relative velocity = {v_rel_mag:.2f} km/s')
 
         ## galaxy properties
         M_star = np.sum(sat.s['mass'].in_units('Msol'))
@@ -127,7 +127,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['satRvir'] = [rvir]
         output['hostRvir'] = [h1rvir]
 
-        print(f'\t Satellite M_gas = {M_gas:.1e} Msun')
+        print(f'\t {sim}-{z0haloid}: Satellite M_gas = {M_gas:.1e} Msun')
 
 
         ## calculate rho_CGM from spherical density profile
@@ -141,9 +141,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['vel_CGM'] = [v_rel_mag]
         output['rho_CGM'] = [rho_CGM]
         output['Pram'] = [Pram]
-        print(f'\t Simple v_rel = {v_rel_mag:.1f}')
-        print(f'\t Simple rho_CGM = {rho_CGM:.1e}')
-        print(f'\t Simple P_ram = {Pram:.1e}')
+        print(f'\t {sim}-{z0haloid}: Simple v_rel = {v_rel_mag:.1f}')
+        print(f'\t {sim}-{z0haloid}: Simple rho_CGM = {rho_CGM:.1e}')
+        print(f'\t {sim}-{z0haloid}: Simple P_ram = {Pram:.1e}')
 
 
         # RAM PRESSURE CALCULATIONS (ADVANCED)
@@ -152,14 +152,14 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         
         # below code adapted from pynbody.analysis.angmom.sideon() to transform the snapshot so that the vector 'vel' points in the +y direction
         top = s
-        print('Centering positions')
+        print(f'\t {sim}-{z0haloid}: Centering positions')
         cen = pynbody.analysis.halo.center(sat, retcen=True)
         tx = pynbody.transformation.inverse_translate(top, cen)
-        print('Centering velocities')
+        print(f'\t {sim}-{z0haloid}: Centering velocities')
         vcen = pynbody.analysis.halo.vel_center(sat, retcen=True) 
         tx = pynbody.transformation.inverse_v_translate(tx, vcen)
         
-        print('Getting velocity vector') 
+        print(f'\t {sim}-{z0haloid}: Getting velocity vector') 
         try:
             vel = np.average(sat.g['vel'], axis=0, weights=sat.g['mass'])
         except ZeroDivisionError:
@@ -168,23 +168,23 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) # not sure why I'm subtracting the host velocity but leaving it for now
         vel -= vel_host
 
-        print('Transforming snapshot')
+        print(f'\t {sim}-{z0haloid}: Transforming snapshot')
         trans = vec_to_xform(vel)
         tx = pynbody.transformation.transform(tx, trans)
         
-        # get R_gal from the particletracking code
-        data = read_tracked_particles(sim, z0haloid)
-        tmin = np.unique(data.time)[np.argmin(np.abs(np.unique(data.time)-t))]
-        R_gal = np.mean(data[data.time==tmin].r_gal)
-        print(f'\t R_gal = {R_gal:.2f} kpc')
+#         # get R_gal from the particletracking code
+#         data = read_tracked_particles(sim, z0haloid)
+#         tmin = np.unique(data.time)[np.argmin(np.abs(np.unique(data.time)-t))]
+#         R_gal = np.mean(data[data.time==tmin].r_gal)
+#         print(f'\t {sim}-{z0haloid}:  R_gal = {R_gal:.2f} kpc')
         
         
-        radius = 2*R_gal
-        height = 0.25 * radius
+        radius = 0.33*rvir
+        height = 0.75 * radius
         center = (0, rvir + height/2, 0)
         wind_filt = pynbody.filt.Disc(radius, height, cen=center)
         env = s[wind_filt].g
-        print(f'\t Identified {len(env)} gas particles to calculate wind properties')
+        print(f'\t {sim}-{z0haloid}: Identified {len(env)} gas particles to calculate wind properties')
         output['n_CGM'] = [len(env)]
 
         try:
@@ -197,9 +197,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['rho_CGM_adv'] = [rho_CGM]
         output['Pram_adv'] = [Pram]
 
-        print(f'\t Advanced vel_CGM = {vel_CGM:.2f}')
-        print(f'\t Advanced rho_CGM = {rho_CGM:.1e}')
-        print(f'\t Advanced P_ram = {Pram:.1e}')
+        print(f'\t {sim}-{z0haloid}: Advanced vel_CGM = {vel_CGM:.2f}')
+        print(f'\t {sim}-{z0haloid}: Advanced rho_CGM = {rho_CGM:.1e}')
+        print(f'\t {sim}-{z0haloid}: Advanced P_ram = {Pram:.1e}')
         
         #print(f'Mean vel of sat gas particles in this transform:', np.linalg.norm(np.mean(sat.g['vel'], axis=0, weights=sat.g['mass'])))
 
@@ -221,7 +221,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
             dphidz = Vmax**2 / Rmax
             Prest = dphidz * SigmaGas
         
-        print(f'\t Prest = {Prest:.1e}')
+        print(f'\t {sim}-{z0haloid}:  Prest = {Prest:.1e}')
 
         output['Prest'] = [Prest]
 
