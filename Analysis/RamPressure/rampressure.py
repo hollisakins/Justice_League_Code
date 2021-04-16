@@ -163,7 +163,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         try:
             vel = np.average(sat.g['vel'], axis=0, weights=sat.g['mass'])
         except ZeroDivisionError:
-            vel = np.average(sat.s['vel'], axis=0, weigths=sat.s['mass'])
+            vel = np.average(sat.s['vel'], axis=0, weights=sat.s['mass'])
             
         vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) # not sure why I'm subtracting the host velocity but leaving it for now
         vel -= vel_host
