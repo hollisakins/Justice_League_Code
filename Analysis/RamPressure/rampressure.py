@@ -67,7 +67,7 @@ def get_snap_start(sim,z0haloid):
             break
         else: 
             continue
-    print(f'\t {sim}-{z0haloi}: Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!
+    print(f'\t {sim}-{z0haloid}: Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!
     return snap_start
 
 
