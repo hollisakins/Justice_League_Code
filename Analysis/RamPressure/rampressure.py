@@ -242,9 +242,15 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         star_masses = np.array(sat.s['mass'].in_units('Msol'),dtype=float)
         star_metals = np.array(sat.s['metals'], dtype=float)
         star_ages = np.array(sat.s['age'].in_units('Myr'),dtype=float)
+        size = len(star_ages)
         
         fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1, imf_type=2, zred=0.0, add_dust_emission=False) # CHECK THESE
         solar_Z = 0.0196
+        
+        star_masses = star_masses[star_ages <= 100]
+        star_metals = star_metals[star_ages <= 100]
+        star_ages = star_ages[star_ages <= 100]
+        print(f'\t {sim}-{z0haloid}: performing FSPS calculations on {len(star_masses)} star particles (subset of {size} stars)')
         
         massform = np.array([])
         for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
@@ -252,7 +258,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
             mass_remaining = fsps_ssp.stellar_mass
             massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining))
 
-        SFR = np.sum(massform[star_ages <= 100])/100e6
+        SFR = np.sum(massform)/100e6
         output['SFR'] = [SFR]
         output['sSFR'] = [SFR/M_star]
         print(f'\t {sim}-{z0haloid}: sSFR = {sSFR:.2e} yr**-1')
