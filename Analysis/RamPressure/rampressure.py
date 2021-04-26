@@ -254,6 +254,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         SFR = np.sum(massform[star_ages <= 100])/100e6
         output['SFR'] = [SFR]
         output['sSFR'] = [SFR/M_star]
+        print(f'\t {sim}-{z0haloid}: sSFR = {sSFR:.2e} yr**-1')
         
         output_tot = pd.concat([output_tot, output])
 
