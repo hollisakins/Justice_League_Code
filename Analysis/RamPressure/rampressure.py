@@ -188,13 +188,20 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['n_CGM'] = [len(env)]
 
         try:
-            vel_CGM = np.linalg.norm(np.average(env['vel'],axis=0,weights=env['mass']))
-            rho_CGM = np.average(env['rho'], weights=env['mass'])
+            vel_CGM = np.linalg.norm(np.average(env['vel'],axis=0,weights=env['mass'])) # should be in units of Msun kpc**-3
+            rho_CGM = np.average(env['rho'], weights=env['mass']) # should be in units of 
+            std_rho_CGM = np.std(env['rho'])
+            std_vel_CGM = np.std(np.linalg.norm(env['vel'], axis=1))
         except ZeroDivisionError:
             vel_CGM, rho_CGM = 0, 0
-        Pram = rho_CGM * vel_CGM * vel_CGM
+            std_vel_CGM, std_rho_CGM = 0, 0
+            
+        Pram = rho_CGM * vel_CGM * vel_CGM # overall units should be Msun kpc**-3 km s**-1
+        
         output['vel_CGM_adv'] = [vel_CGM]
         output['rho_CGM_adv'] = [rho_CGM]
+        output['std_vel_CGM'] = [std_vel_CGM]
+        output['std_rho_CGM'] = [std_rho_CGM]
         output['Pram_adv'] = [Pram]
 
         print(f'\t {sim}-{z0haloid}: Advanced vel_CGM = {vel_CGM:.2f}')
@@ -218,7 +225,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
             percent_enc = p['mass_enc']/M_gas
             rhalf = np.min(p['rbins'][percent_enc > 0.5])
             SigmaGas = M_gas / (2*np.pi*rhalf**2)
-            Rmax = sat.properties['Rmax']
+            Rmax = sat.properties['Rmax']/hubble*a
             Vmax = sat.properties['Vmax']
             dphidz = Vmax**2 / Rmax
             Prest = dphidz * SigmaGas
@@ -228,8 +235,26 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['Prest'] = [Prest]
         output['SigmaGas'] = [SigmaGas]
         output['dphidz'] = [dphidz]
+    
+        
+        # sfr calculations
+        star_masses = np.array(sat.s['mass'].in_units('Msol'),dtype=float)
+        star_metals = np.array(sat.s['metals'], dtype=float)
+        star_ages = np.array(sat.s['age'].in_units('Myr'),dtype=float)
+        
+        fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1, imf_type=2, zred=0.0, add_dust_emission=False) # CHECK THESE
+        solar_Z = 0.0196
+        
+        massform = np.array([])
+        for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
+            fsps_ssp.params['logzsol'] = np.log10(metallicity/solar_Z)
+            mass_remaining = fsps_ssp.stellar_mass
+            massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining))
 
-
+        SFR = np.sum(massform[star_ages <= 100])/100e6
+        output['SFR'] = [SFR]
+        output['sSFR'] = [SFR/M_star]
+        
         output_tot = pd.concat([output_tot, output])
 
     return output_tot
