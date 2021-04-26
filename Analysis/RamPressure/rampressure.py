@@ -6,6 +6,7 @@ import sys
 import tqdm
 import os
 from bulk import *
+import fsps
 
 hubble =  0.6776942783267969
 
