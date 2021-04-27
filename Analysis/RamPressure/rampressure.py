@@ -119,9 +119,10 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
 
         
         # nearest neighbor distance
+        nDM = len(sat.dm)
         Xcs, Ycs, Zcs = np.array([]), np.array([]), np.array([])
         for halo in h:
-            if len(halo.dm) > 1000:
+            if len(halo.dm) > nDM*0.9:
                 r = np.array([halo.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
                 if not (r==r_sat).all():
                     Xcs = np.append(Xcs, r[0])
