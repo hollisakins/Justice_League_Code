@@ -101,7 +101,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         #print(f'\n\t Time = {t:.1f} Gyr')
 
         # RAM PRESSURE CALCULATIONS (SIMPLE)
-
+        
         ## positions and velocities
         r_sat = np.array([sat.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
         r_host = np.array([host.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
@@ -117,6 +117,22 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
 
         print(f'\t {sim}-{z0haloid}: Relative velocity = {v_rel_mag:.2f} km/s')
 
+        
+        # nearest neighbor distance
+        Xcs, Ycs, Zcs = np.array([]), np.array([]), np.array([])
+        for halo in h:
+            if len(halo.dm) > 1000:
+                r = np.array([halo.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
+                if not (r==r_sat).all():
+                    Xcs = np.append(Xcs, r[0])
+                    Ycs = np.append(Ycs, r[1])
+                    Zcs = np.append(Zcs, r[2])
+        
+        
+        r_others = np.array([Xcs, Ycs, Zcs]).T
+        dists = np.linalg.norm(r_others - r_sat, axis=1)
+        print(f'\t {sim}-{z0haloid}: dNN = {np.min(dists):.1f} kpc')
+        
         ## galaxy properties
         M_star = np.sum(sat.s['mass'].in_units('Msol'))
         M_gas = np.sum(sat.g['mass'].in_units('Msol'))
