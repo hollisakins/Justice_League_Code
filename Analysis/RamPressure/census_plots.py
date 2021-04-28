@@ -151,7 +151,12 @@ def fill_fractions_ax(key, ax, label=False, show_y_ticks=False):
     ax.yaxis.set_minor_locator(mpl.ticker.MultipleLocator(0.1))
     ax.tick_params(direction='in', which='both', top=True,right=True)
 
-    ax.annotate(key.replace('_','-'), (0.94, 0.92), xycoords='axes fraction', ha='right', va='top',
+    
+    for sim, simname in {'h148':'Sandra', 'h229':'Ruth', 'h242':'Sonia', 'h329':'Elena'}.items():
+        key = key.replace(sim, simname)
+        
+    key = key.replace('_','-')
+    ax.annotate(key, (0.94, 0.92), xycoords='axes fraction', ha='right', va='top',
                 bbox=dict(boxstyle='round,pad=0.4', fc='w', ec='0.5', alpha=0.9), zorder=100)
 
     
@@ -175,15 +180,17 @@ taus = taus[~np.isnan(taus)]
 print(*np.array(keys)[np.argsort(taus)])
 
 ###
-assert 1==2
-keys = ['h242_24', 'h148_13', 'h148_28', 'h148_37', 'h148_68', 'h229_20', 'h229_22', 'h242_80']
 
-fig = plt.figure(figsize=(7.5, 4), dpi=300)
-gs = mpl.gridspec.GridSpec(nrows=2, ncols=4, figure=fig)
+keys = ['h329_33','h148_278','h229_27','h242_41','h148_13','h229_23','h229_55','h148_283','h148_45','h242_24','h229_22','h148_68','h148_37','h242_80','h229_20','h148_28']
+
+fig = plt.figure(figsize=(7.5, 7.5), dpi=300)
+gs = mpl.gridspec.GridSpec(nrows=4, ncols=4, figure=fig)
 gs.update(wspace=0.05, top=0.98, right=0.99, left=0.07, bottom=0.12)
 
 ax0,ax1,ax2,ax3 = plt.subplot(gs[0,0]),plt.subplot(gs[0,1]),plt.subplot(gs[0,2]),plt.subplot(gs[0,3])
 ax4,ax5,ax6,ax7 = plt.subplot(gs[1,0]),plt.subplot(gs[1,1]),plt.subplot(gs[1,2]),plt.subplot(gs[1,3])
+ax8,ax9,ax10,ax11 = plt.subplot(gs[2,0]),plt.subplot(gs[2,1]),plt.subplot(gs[2,2]),plt.subplot(gs[2,3])
+ax12,ax13,ax14,ax15 = plt.subplot(gs[3,0]),plt.subplot(gs[3,1]),plt.subplot(gs[3,2]),plt.subplot(gs[3,3])
 
 fill_fractions_ax(keys[0],ax0, label=True, show_y_ticks=True)
 fill_fractions_ax(keys[1],ax1)
@@ -193,9 +200,17 @@ fill_fractions_ax(keys[4],ax4, show_y_ticks=True)
 fill_fractions_ax(keys[5],ax5)
 fill_fractions_ax(keys[6],ax6)
 fill_fractions_ax(keys[7],ax7)
+fill_fractions_ax(keys[8],ax8, show_y_ticks=True)
+fill_fractions_ax(keys[9],ax9)
+fill_fractions_ax(keys[10],ax10)
+fill_fractions_ax(keys[11],ax11)
+fill_fractions_ax(keys[12],ax12, show_y_ticks=True)
+fill_fractions_ax(keys[13],ax13)
+fill_fractions_ax(keys[14],ax14)
+fill_fractions_ax(keys[15],ax15)
 
 fig.text(0.53, 0.04, 'Time [Gyr]', ha='center', va='center')
 fig.text(0.02, 0.53, r'$f(M_{\rm gas})$', ha='center', va='center', rotation='vertical')
 
-plt.savefig(f'plots/fractions/fractions.pdf')
+plt.savefig(f'plots/fractions/fractions_big.pdf')
 plt.show()
