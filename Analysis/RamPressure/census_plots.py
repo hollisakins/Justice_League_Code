@@ -132,12 +132,12 @@ def fill_fractions_ax(key, ax, label=False, show_y_ticks=False):
     ax.set_ylim(0,1)
 
     if label:
-        if key=='h242_24':
-            ax.annotate('Sat \n Disk',(7.3,0.28),ha='center', va='center', color=colors[0], size=fontsize)
-            ax.annotate('Sat \n Halo',(6.7,0.45),ha='center', va='center', color=colors[1], size=fontsize)
-            ax.annotate('Host \n Disk',(12.5,0.15),ha='center', va='center', color=colors[2], size=fontsize)
-            ax.annotate('Host \n Halo',(9.5,0.55),ha='center', va='center', color=colors[3], size=fontsize)
-            ax.annotate('IGM',(6.7,0.87),ha='center', va='center', color=colors[5], size=fontsize)
+        if key=='h148-37':
+            ax.annotate('Sat \n Disk',(8.2,0.8),ha='center', va='center', color=colors[0], size=fontsize)
+            ax.annotate('Sat \n Halo',(8.2,0.65),ha='center', va='center', color=colors[1], size=fontsize)
+            ax.annotate('Host Disk',(12,0.42),ha='center', va='center', color=colors[2], size=fontsize)
+            ax.annotate('Host \n Halo',(11.2,0.65),ha='center', va='center', color=colors[3], size=fontsize)
+            ax.annotate('IGM',(9.3,0.87),ha='left', va='center', color=colors[5], size=fontsize)
 #         if key=='h148_68':
 #             ax.annotate('Sat \n Disk',(7.3,0.1),ha='center', va='center', color=colors[0], size=fontsize)
 #             ax.annotate('Sat \n Halo',(7.3,0.53),ha='center', va='center', color=colors[1], size=fontsize)
@@ -185,7 +185,7 @@ keys = ['h329_33','h148_278','h229_27','h242_41','h148_13','h229_23','h229_55','
 
 fig = plt.figure(figsize=(7.5, 7.5), dpi=300)
 gs = mpl.gridspec.GridSpec(nrows=4, ncols=4, figure=fig)
-gs.update(wspace=0.05, top=0.98, right=0.99, left=0.07, bottom=0.12)
+gs.update(wspace=0.05, top=0.98, right=0.99, left=0.07, bottom=0.07)
 
 ax0,ax1,ax2,ax3 = plt.subplot(gs[0,0]),plt.subplot(gs[0,1]),plt.subplot(gs[0,2]),plt.subplot(gs[0,3])
 ax4,ax5,ax6,ax7 = plt.subplot(gs[1,0]),plt.subplot(gs[1,1]),plt.subplot(gs[1,2]),plt.subplot(gs[1,3])
