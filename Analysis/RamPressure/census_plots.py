@@ -132,11 +132,11 @@ def fill_fractions_ax(key, ax, label=False, show_y_ticks=False):
     ax.set_ylim(0,1)
 
     if key=='h148_37':
-        ax.annotate('Sat \n Disk',(8.2,0.8),ha='center', va='center', color=colors[0], size=fontsize)
-        ax.annotate('Sat \n Halo',(8.2,0.65),ha='center', va='center', color=colors[1], size=fontsize)
-        ax.annotate('Host Disk',(12,0.42),ha='center', va='center', color=colors[2], size=fontsize)
+        ax.annotate('Sat \n Disk',(8.2,0.2),ha='center', va='center', color=colors[0], size=fontsize)
+        ax.annotate('Sat \n Halo',(8.2,0.6),ha='center', va='center', color=colors[1], size=fontsize)
+        ax.annotate('Host Disk',(12,0.4),ha='center', va='center', color=colors[2], size=fontsize)
         ax.annotate('Host \n Halo',(11.2,0.65),ha='center', va='center', color=colors[3], size=fontsize)
-        ax.annotate('IGM',(9.3,0.87),ha='left', va='center', color=colors[5], size=fontsize)
+        ax.annotate('IGM',(9.3,0.9),ha='left', va='center', color=colors[5], size=fontsize)
     if not show_y_ticks:
         ax.tick_params(labelleft=False)
 
