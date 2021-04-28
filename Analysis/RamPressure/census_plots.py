@@ -131,19 +131,12 @@ def fill_fractions_ax(key, ax, label=False, show_y_ticks=False):
     ax.set_xlim(min(times),max(times))
     ax.set_ylim(0,1)
 
-    if label:
-        if key=='h148-37':
-            ax.annotate('Sat \n Disk',(8.2,0.8),ha='center', va='center', color=colors[0], size=fontsize)
-            ax.annotate('Sat \n Halo',(8.2,0.65),ha='center', va='center', color=colors[1], size=fontsize)
-            ax.annotate('Host Disk',(12,0.42),ha='center', va='center', color=colors[2], size=fontsize)
-            ax.annotate('Host \n Halo',(11.2,0.65),ha='center', va='center', color=colors[3], size=fontsize)
-            ax.annotate('IGM',(9.3,0.87),ha='left', va='center', color=colors[5], size=fontsize)
-#         if key=='h148_68':
-#             ax.annotate('Sat \n Disk',(7.3,0.1),ha='center', va='center', color=colors[0], size=fontsize)
-#             ax.annotate('Sat \n Halo',(7.3,0.53),ha='center', va='center', color=colors[1], size=fontsize)
-#             ax.annotate('Host \n Disk',(13,0.33),ha='center', va='center', color=colors[2], size=fontsize)
-#             ax.annotate('Host Halo',(10.8,0.55),ha='center', va='center', color=colors[3], size=fontsize)
-#             ax.annotate('IGM',(9.2,0.95),ha='center', va='center', color=colors[5], size=fontsize)
+    if key=='h148-37':
+        ax.annotate('Sat \n Disk',(8.2,0.8),ha='center', va='center', color=colors[0], size=fontsize)
+        ax.annotate('Sat \n Halo',(8.2,0.65),ha='center', va='center', color=colors[1], size=fontsize)
+        ax.annotate('Host Disk',(12,0.42),ha='center', va='center', color=colors[2], size=fontsize)
+        ax.annotate('Host \n Halo',(11.2,0.65),ha='center', va='center', color=colors[3], size=fontsize)
+        ax.annotate('IGM',(9.3,0.87),ha='left', va='center', color=colors[5], size=fontsize)
     if not show_y_ticks:
         ax.tick_params(labelleft=False)
 
@@ -210,7 +203,7 @@ fill_fractions_ax(keys[14],ax14)
 fill_fractions_ax(keys[15],ax15)
 
 fig.text(0.53, 0.04, 'Time [Gyr]', ha='center', va='center')
-fig.text(0.02, 0.53, r'$f(M_{\rm gas})$', ha='center', va='center', rotation='vertical')
+fig.text(0.01, 0.53, r'$f(M_{\rm gas})$', ha='center', va='center', rotation='vertical')
 
 plt.savefig(f'plots/fractions/fractions_big.pdf')
 plt.show()
