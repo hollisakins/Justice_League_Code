@@ -133,6 +133,8 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         r_others = np.array([Xcs, Ycs, Zcs]).T
         dists = np.linalg.norm(r_others - r_sat, axis=1)
         print(f'\t {sim}-{z0haloid}: dNN = {np.min(dists):.1f} kpc')
+        output['dNN'] = [np.min(dists)]
+        
         
         ## galaxy properties
         M_star = np.sum(sat.s['mass'].in_units('Msol'))
