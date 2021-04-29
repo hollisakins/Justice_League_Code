@@ -7,7 +7,7 @@ from bulk import *
 import sys
 
 sim = str(sys.argv[1])
-haliod = int(sys.argv[2])
+haloid = int(sys.argv[2])
 
 #if sim=='h148' and haloid==68:
     
