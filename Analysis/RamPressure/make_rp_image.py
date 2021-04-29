@@ -34,7 +34,7 @@ print('Centering halo 1')
 pynbody.analysis.halo.center(h[1])
 
 
-fig = plt.figure(dpi=300, figsize=(7,3), constrained_layout=True)
+fig = plt.figure(dpi=300, figsize=(7.5,3), constrained_layout=True)
 gs = mpl.gridspec.GridSpec(nrows=1, ncols=2, width_ratios = [1,1.2], figure=fig)
 ax0 = plt.subplot(gs[0])
 ax1 = plt.subplot(gs[1])
@@ -73,9 +73,9 @@ for t in time:
     x = np.mean(d.sat_Xc) - np.mean(d.host_Xc)
     y = np.mean(d.sat_Yc) - np.mean(d.host_Yc)
     z = np.mean(d.sat_Zc) - np.mean(d.host_Zc)
-    X = np.append(X,x/hubble*a)
-    Y = np.append(Y,y/hubble*a)
-    Z = np.append(Z,z/hubble*a)
+    X = np.append(X,x) #/hubble*a)
+    Y = np.append(Y,y) #/hubble*a)
+    Z = np.append(Z,z) #/hubble*a)
 
 print('Performing spline fits...')
 tnew = np.linspace(np.min(time), np.max(time), 1000)
