@@ -5,6 +5,7 @@ import pickle
 import sys
 import tqdm
 import os
+import fsps
 
 hubble =  0.6776942783267969
 
