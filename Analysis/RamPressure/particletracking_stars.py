@@ -124,31 +124,26 @@ def analysis(formedStars, scrap):
 
     # calculate properties that are invariant to centering
     output['tform'] = np.array(formedStars.s['tform'].in_units('Gyr'), dtype=float)
+    output['massform'] = np.array(formedStars.s['mass'].in_units('Msun'),dtype=float)
     output['pid'] = np.array(formedStars.s['iord'],dtype=int)
     output['igasorder'] = np.array(formedStars.s['igasorder'],dtype=int)
     
-    star_masses = np.array(formedStars.s['mass'].in_units('Msol'),dtype=float)
-    star_metals = np.array(formedStars.s['metals'],dtype=float)
-    star_ages = np.array(formedStars.s['age'].in_units('Myr'),dtype=float)
-    size = len(star_ages)
-    print(f'Performing FSPS calculations on {size} star particles')
+#     star_masses = np.array(formedStars.s['mass'].in_units('Msol'),dtype=float)
+#     star_metals = np.array(formedStars.s['metals'],dtype=float)
+#     star_ages = np.array(formedStars.s['age'].in_units('Myr'),dtype=float)
+#     size = len(star_ages)
+#     print(f'Performing FSPS calculations on {size} star particles')
     
-    fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1,imf_type=2,zred=0.,add_dust_emission=False)
-    solar_Z = 0.0196
+#     fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1,imf_type=2,zred=0.,add_dust_emission=False)
+#     solar_Z = 0.0196
     
-    massform = np.array([])
-    for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
-        fsps_ssp.params['logzsol'] = np.log10(metallicity/solar_Z)
-        mass_remaining = fsps_ssp.stellar_mass
-        massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining))
+#     massform = np.array([])
+#     for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
+#         fsps_ssp.params['logzsol'] = np.log10(metallicity/solar_Z)
+#         mass_remaining = fsps_ssp.stellar_mass
+#         massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining))
+#     output['massform'] = massform
     
-    output['massform'] = massform
-    
-    if scrap:
-        output['formed_during_tracking_period'] = np.array([False]*len(formedStars))
-    else:
-        output['formed_during_tracking_period'] = np.array([True]*len(formedStars))
-
     return output
 
 
