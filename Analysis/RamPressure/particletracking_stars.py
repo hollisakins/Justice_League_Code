@@ -119,7 +119,7 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
 
 def analysis(formedStars, scrap):
     output = pd.DataFrame()
-    a = float(s.properties['a'])
+    #a = float(s.properties['a'])
 
     # calculate properties that are invariant to centering
     output['tform'] = np.array(formedStars.s['tform'].in_units('Gyr'), dtype=float)
