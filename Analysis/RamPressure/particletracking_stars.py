@@ -124,7 +124,7 @@ def analysis(formedStars, scrap):
 
     # calculate properties that are invariant to centering
     output['tform'] = np.array(formedStars.s['tform'].in_units('Gyr'), dtype=float)
-    output['massform'] = np.array(formedStars.s['mass'].in_units('Msun'),dtype=float)
+    output['massform'] = np.array(formedStars.s['mass'].in_units('Msol'),dtype=float)
     output['pid'] = np.array(formedStars.s['iord'],dtype=int)
     output['igasorder'] = np.array(formedStars.s['igasorder'],dtype=int)
     
