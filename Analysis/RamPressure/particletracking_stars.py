@@ -104,6 +104,7 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
         alreadyTrackedBool = np.isin(iordsStars, output.pid) # boolean array describing whether we've already tracked that star particle
         
         formedStars = s.s[formedBool & ~alreadyTrackedBool] # formedStars is the star particles that formed from one of our gas particles and that we haven't already tracked
+        print(f'Identified {len(formedStars)} stars formed, removing {len(alreadyTrackedBool[alreadyTrackedBool])} already tracked star particles.')
         
         # save formation times, masses, iords, and igasords of star particles that formed from gas particles we're tracking
         output = pd.concat([output, analysis(formedStars, scrap)])
@@ -126,11 +127,11 @@ def analysis(formedStars, scrap):
     star_metals = np.array(formedStars.s['metals'],dtype=float)
     star_ages = np.array(formedStars.s['age'].in_units('Myr'),dtype=float)
     size = len(star_ages)
+    print(f'Performing FSPS calculations on {size} star particles')
     
     fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1,imf_type=2,zred=0.,add_dust_emission=False)
     solar_Z = 0.0196
     
-    print(f'\t {sim}-{z0haloid}: performing FSPS calculations on {size} star particles')
     massform = np.array([])
     for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
         fsps_ssp.params['logzsol'] = np.log10(metallicity/solar_Z)
