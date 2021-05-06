@@ -101,7 +101,10 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
         iordsStars = np.array(s.s['iord'],dtype=int)
         
         formedBool = np.isin(igasords,iords) # boolean array describing whether that star particle in the sim formed from one of our tracked gas particles
-        alreadyTrackedBool = np.isin(iordsStars, output.pid) # boolean array describing whether we've already tracked that star particle
+        if scrap:
+            alreadyTrackedBool = np.array([False]*len(igasords),dtype=bool)
+        else:
+            alreadyTrackedBool = np.isin(iordsStars, output.pid) # boolean array describing whether we've already tracked that star particle
         
         formedStars = s.s[formedBool & ~alreadyTrackedBool] # formedStars is the star particles that formed from one of our gas particles and that we haven't already tracked
         print(f'Identified {len(formedStars)} stars formed, removing {len(alreadyTrackedBool[alreadyTrackedBool])} already tracked star particles.')
