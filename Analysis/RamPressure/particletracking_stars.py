@@ -93,7 +93,7 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
 
     output = pd.DataFrame()
     print('Starting tracking/analysis...')
-    scrap = True
+
     for f,haloid,h1id in tqdm.tqdm(zip(filepaths,haloids,h1ids),total=len(filepaths)):
         s = pynbody.load(f)
         s.physical_units()
@@ -101,49 +101,24 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
         igasords = np.array(s.s['igasorder'],dtype=int)
         iordsStars = np.array(s.s['iord'],dtype=int)
         
-        formedBool = np.isin(igasords,iords) # boolean array describing whether that star particle in the sim formed from one of our tracked gas particles
-        if scrap:
-            alreadyTrackedBool = np.array([False]*len(igasords),dtype=bool)
-        else:
-            alreadyTrackedBool = np.isin(iordsStars, output.pid) # boolean array describing whether we've already tracked that star particle
-        
-        formedStars = s.s[formedBool & ~alreadyTrackedBool] # formedStars is the star particles that formed from one of our gas particles and that we haven't already tracked
-        print(f'Identified {len(formedStars)} stars formed, removing {len(alreadyTrackedBool[alreadyTrackedBool])} already tracked star particles.')
+        formedBool = np.isin(igasords,iords) # boolean array describing whether that star particle in the sim formed from one of our tracked gas particles        
+        formedStars = s.s[formedBool] # formedStars is the star particles that formed from one of our gas particles 
+        print(f'Identified {len(formedStars)} stars to track')
         
         # save formation times, masses, iords, and igasords of star particles that formed from gas particles we're tracking
-        output = pd.concat([output, analysis(formedStars, scrap)])
-        
-        scrap = False
+        output = pd.concat([output, analysis(formedStars)])
     
     return output
 
 
-def analysis(formedStars, scrap):
+def analysis(formedStars):
     output = pd.DataFrame()
-    #a = float(s.properties['a'])
 
-    # calculate properties that are invariant to centering
     output['tform'] = np.array(formedStars.s['tform'].in_units('Gyr'), dtype=float)
     output['massform'] = np.array(formedStars.s['mass'].in_units('Msol'),dtype=float)
     output['pid'] = np.array(formedStars.s['iord'],dtype=int)
     output['igasorder'] = np.array(formedStars.s['igasorder'],dtype=int)
-    
-#     star_masses = np.array(formedStars.s['mass'].in_units('Msol'),dtype=float)
-#     star_metals = np.array(formedStars.s['metals'],dtype=float)
-#     star_ages = np.array(formedStars.s['age'].in_units('Myr'),dtype=float)
-#     size = len(star_ages)
-#     print(f'Performing FSPS calculations on {size} star particles')
-    
-#     fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1,imf_type=2,zred=0.,add_dust_emission=False)
-#     solar_Z = 0.0196
-    
-#     massform = np.array([])
-#     for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
-#         fsps_ssp.params['logzsol'] = np.log10(metallicity/solar_Z)
-#         mass_remaining = fsps_ssp.stellar_mass
-#         massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining))
-#     output['massform'] = massform
-    
+        
     return output
 
 
