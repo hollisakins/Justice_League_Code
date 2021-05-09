@@ -106,14 +106,15 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
         print(f'Identified {len(formedStars)} stars to track')
         
         # save formation times, masses, iords, and igasords of star particles that formed from gas particles we're tracking
-        output = pd.concat([output, analysis(formedStars)])
+        output = pd.concat([output, analysis(s, formedStars)])
     
     return output
 
 
-def analysis(formedStars):
+def analysis(s, formedStars):
     output = pd.DataFrame()
-
+    
+    output['time'] = np.array([s.properties['time'].in_units('Gyr')]*len(formedStars.s), dtype=float)
     output['tform'] = np.array(formedStars.s['tform'].in_units('Gyr'), dtype=float)
     output['massform'] = np.array(formedStars.s['mass'].in_units('Msol'),dtype=float)
     output['pid'] = np.array(formedStars.s['iord'],dtype=int)
