@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import pickle
 from bulk import *
+from tqdm import tqdm
+tqdm.pandas()
+
 
 mpl.rc('font',**{'family':'serif','monospace':['Palatino']})
 mpl.rc('text', usetex=True)
@@ -54,15 +57,27 @@ def read_infall_properties():
     
     return data
 
-
+def determine_if_formed_in_sat(s,p):
+    p = p[p.pid==s.igasorder]
+    p = p.iloc[np.where(p.time < s.tform)[0]].sort_values('time').iloc[-1]
+    s['formedInSat'] = bool(p.in_sat)
+    return s
+    
 def fill_fractions_ax(key, ax, label=False, show_y_ticks=False):
     sim = str(key[:4])
     haloid = int(key[5:])
     print(sim,haloid)
     data = read_tracked_particles(sim,haloid,verbose=False)
+    stars = pd.read_hdf('../../Data/tracked_stars.hdf5',key=key)
+    stars = stars[stars.tform > np.min(data.time)]
+    stars = stars.progress_apply(determine_if_formed_in_sat, p=data, axis=1)
+    stars['formedInSat'] = np.array(np.array(stars.formedInSat,dtype=int),dtype=bool)
+    print(f'{len(stars[stars.formedInSat])/len(stars):.3f}% of stars formed in the satellite')
+    stars = stars[stars.formedInSat]
     
     times = np.unique(data.time)
 
+    frac_formedStars = np.array([])
     frac_satdisk = np.array([])
     frac_sathalo = np.array([])
     frac_hostdisk = np.array([])
@@ -71,58 +86,55 @@ def fill_fractions_ax(key, ax, label=False, show_y_ticks=False):
     frac_IGM = np.array([])
 
     for t in times:
-        d = data[data.time==t]
+        d = data[np.abs(data.time-t) < 0.01]
+        s = stars[np.abs(stars.time-t) < 0.01]
+        
+        mass_div = np.sum(d.mass) + np.sum(s.massform)
+        
+        frac_formedStars = np.append(frac_formedStars,np.sum(s.massform)/mass_div)
+        frac_satdisk = np.append(frac_satdisk,np.sum(d.mass[d.sat_disk])/mass_div)
+        frac_sathalo = np.append(frac_sathalo,np.sum(d.mass[d.sat_halo])/mass_div)
+        frac_hostdisk = np.append(frac_hostdisk,np.sum(d.mass[d.host_disk])/mass_div)
+        frac_hosthalo = np.append(frac_hosthalo,np.sum(d.mass[d.host_halo])/mass_div)
+        frac_othersat = np.append(frac_othersat,np.sum(d.mass[d.other_sat])/mass_div)
+        frac_IGM = np.append(frac_IGM,np.sum(d.mass[d.IGM])/mass_div)
 
-        frac_satdisk = np.append(frac_satdisk,np.sum(d.mass[d.sat_disk])/np.sum(d.mass))
-        frac_sathalo = np.append(frac_sathalo,np.sum(d.mass[d.sat_halo])/np.sum(d.mass))
-        frac_hostdisk = np.append(frac_hostdisk,np.sum(d.mass[d.host_disk])/np.sum(d.mass))
-        frac_hosthalo = np.append(frac_hosthalo,np.sum(d.mass[d.host_halo])/np.sum(d.mass))
-        frac_othersat = np.append(frac_othersat,np.sum(d.mass[d.other_sat])/np.sum(d.mass))
-        frac_IGM = np.append(frac_IGM,np.sum(d.mass[d.IGM])/np.sum(d.mass))
-
-    frac_lost = 1 - (frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat+frac_IGM)
+    frac_lost = 1 - (frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat+frac_IGM)
 
     timescales = read_timescales()
     timescales = timescales[(timescales.sim==key[:4])&(timescales.haloid==int(key[5:]))]
     tinfall = age - timescales.tinfall.tolist()[0]
     tquench = age - timescales.tquench.tolist()[0]
-    
-    times = np.unique(data.time)
-
-    frac_satdisk,frac_sathalo,frac_hostdisk,frac_hosthalo,frac_othersat,frac_IGM = np.array([]),np.array([]),np.array([]),np.array([]),np.array([]),np.array([])
-
-    for t in times:
-        d = data[data.time==t]
-        frac_satdisk = np.append(frac_satdisk,np.sum(d.mass[d.sat_disk])/np.sum(d.mass))
-        frac_sathalo = np.append(frac_sathalo,np.sum(d.mass[d.sat_halo])/np.sum(d.mass))
-        frac_hostdisk = np.append(frac_hostdisk,np.sum(d.mass[d.host_disk])/np.sum(d.mass))
-        frac_hosthalo = np.append(frac_hosthalo,np.sum(d.mass[d.host_halo])/np.sum(d.mass))
-        frac_othersat = np.append(frac_othersat,np.sum(d.mass[d.other_sat])/np.sum(d.mass))
-        frac_IGM = np.append(frac_IGM,np.sum(d.mass[d.IGM])/np.sum(d.mass))
-
-    frac_lost = 1 - (frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat+frac_IGM)
 
     lw = 0.6
     alpha = 0.3
     fontsize = 8
-    colors = ['mediumblue', 'tab:red', 'darkorchid', 'darkorange', 'g', 'k']
+    colors = ['mediumblue', 'tab:red', 'darkorchid', 'darkorange', 'g', 'k', 'lightblue']
 
-    ax.fill_between(times, 0, frac_satdisk,fc=colors[0], alpha=alpha)
-    ax.plot(times, frac_satdisk, color=colors[0], linewidth=lw, zorder=6)
-
-    ax.fill_between(times, frac_satdisk, frac_satdisk+frac_sathalo, fc=colors[1], alpha=alpha)
-    ax.plot(times, frac_satdisk+frac_sathalo, color=colors[1], linewidth=lw, zorder=5)
-
-    ax.fill_between(times, frac_satdisk+frac_sathalo, frac_satdisk+frac_sathalo+frac_hostdisk, fc=colors[2], alpha=alpha)
-    ax.plot(times, frac_satdisk+frac_sathalo+frac_hostdisk, color=colors[2], linewidth=lw, zorder=4)
-
-    ax.fill_between(times, frac_satdisk+frac_sathalo+frac_hostdisk, frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo, fc=colors[3], alpha=alpha)
-    ax.plot(times, frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo, color=colors[3], linewidth=lw, zorder=3)
-
-    ax.fill_between(times, frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo,frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat, fc=colors[4], alpha=alpha)
-    ax.plot(times, frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat, color=colors[4], linewidth=lw, zorder=2)
+    ax.fill_between(times, 0, frac_formedStars, fc=colors[6], alpha=alpha)
+    ax.plot(times, frac_formedStars, color=colors[6], linewidth=lw, zorder=7)
     
-    ax.fill_between(times, frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat,frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat+frac_IGM, fc=colors[5], alpha=alpha)
+    ax.fill_between(times, frac_formedStars, frac_formedStars + frac_satdisk,fc=colors[0], alpha=alpha)
+    ax.plot(times, frac_formedStars + frac_satdisk, color=colors[0], linewidth=lw, zorder=6)
+
+    ax.fill_between(times, frac_formedStars + frac_satdisk, 
+                    frac_formedStars + frac_satdisk+frac_sathalo, fc=colors[1], alpha=alpha)
+    ax.plot(times, frac_formedStars + frac_satdisk+frac_sathalo, color=colors[1], linewidth=lw, zorder=5)
+
+    ax.fill_between(times, frac_formedStars + frac_satdisk+frac_sathalo, 
+                    frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk, fc=colors[2], alpha=alpha)
+    ax.plot(times, frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk, color=colors[2], linewidth=lw, zorder=4)
+
+    ax.fill_between(times, frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk, 
+                    frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo, fc=colors[3], alpha=alpha)
+    ax.plot(times, frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo, color=colors[3], linewidth=lw, zorder=3)
+
+    ax.fill_between(times, frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo,
+                    frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat, fc=colors[4], alpha=alpha)
+    ax.plot(times, frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat, color=colors[4], linewidth=lw, zorder=2)
+    
+    ax.fill_between(times, frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat,
+                    frac_formedStars + frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_othersat+frac_IGM, fc=colors[5], alpha=alpha)
 #     ax.plot(times, frac_satdisk+frac_sathalo+frac_hostdisk+frac_hosthalo+frac_IGM, color=colors[5], linewidth=lw, zorder=2)
 
     ax.axline((tinfall,0),(tinfall,1),linestyle='--', linewidth=0.5, color='k')
@@ -131,12 +143,19 @@ def fill_fractions_ax(key, ax, label=False, show_y_ticks=False):
     ax.set_xlim(min(times),max(times))
     ax.set_ylim(0,1)
 
-    if key=='h148_37':
-        ax.annotate('Sat \n Disk',(8.2,0.2),ha='center', va='center', color=colors[0], size=fontsize)
-        ax.annotate('Sat \n Halo',(8.2,0.6),ha='center', va='center', color=colors[1], size=fontsize)
-        ax.annotate('Host Disk',(12,0.4),ha='center', va='center', color=colors[2], size=fontsize)
-        ax.annotate('Host \n Halo',(11.2,0.65),ha='center', va='center', color=colors[3], size=fontsize)
-        ax.annotate('IGM',(9.3,0.9),ha='left', va='center', color=colors[5], size=fontsize)
+    if label:
+        if key=='h242_24':
+            ax.annotate('Sat \n Disk',(7.3,0.28),ha='center', va='center', color=colors[0], size=fontsize)
+            ax.annotate('Sat \n Halo',(6.7,0.45),ha='center', va='center', color=colors[1], size=fontsize)
+            ax.annotate('Host \n Disk',(12.5,0.15),ha='center', va='center', color=colors[2], size=fontsize)
+            ax.annotate('Host \n Halo',(9.5,0.55),ha='center', va='center', color=colors[3], size=fontsize)
+            ax.annotate('IGM',(6.7,0.87),ha='center', va='center', color=colors[5], size=fontsize)
+#         if key=='h148_68':
+#             ax.annotate('Sat \n Disk',(7.3,0.1),ha='center', va='center', color=colors[0], size=fontsize)
+#             ax.annotate('Sat \n Halo',(7.3,0.53),ha='center', va='center', color=colors[1], size=fontsize)
+#             ax.annotate('Host \n Disk',(13,0.33),ha='center', va='center', color=colors[2], size=fontsize)
+#             ax.annotate('Host Halo',(10.8,0.55),ha='center', va='center', color=colors[3], size=fontsize)
+#             ax.annotate('IGM',(9.2,0.95),ha='center', va='center', color=colors[5], size=fontsize)
     if not show_y_ticks:
         ax.tick_params(labelleft=False)
 
@@ -144,11 +163,10 @@ def fill_fractions_ax(key, ax, label=False, show_y_ticks=False):
     ax.yaxis.set_minor_locator(mpl.ticker.MultipleLocator(0.1))
     ax.tick_params(direction='in', which='both', top=True,right=True)
 
-    
     for sim, simname in {'h148':'Sandra', 'h229':'Ruth', 'h242':'Sonia', 'h329':'Elena'}.items():
         key = key.replace(sim, simname)
-        
-    key = key.replace('_','-')
+        key = key.replace('_','-')
+    
     ax.annotate(key, (0.94, 0.92), xycoords='axes fraction', ha='right', va='top',
                 bbox=dict(boxstyle='round,pad=0.4', fc='w', ec='0.5', alpha=0.9), zorder=100)
 
