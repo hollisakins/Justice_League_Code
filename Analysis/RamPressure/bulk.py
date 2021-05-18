@@ -168,13 +168,10 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
     for pid in tqdm.tqdm(pids):
         dat = data[data.pid==pid]
 
-#         cool_disk = np.array(dat.cool_disk, dtype=bool)
-#         hot_disk = np.array(dat.hot_disk, dtype=bool)
-#         cool_halo = np.array(dat.cool_halo, dtype=bool)
-#         hot_halo = np.array(dat.hot_halo, dtype=bool)
-
         sat_disk = np.array(dat.sat_disk, dtype=bool)
         sat_halo = np.array(dat.sat_halo, dtype=bool)
+        in_sat = np.array(dat.in_sat, dtype=bool)
+        outside_sat = ~in_sat
 
         host_halo = np.array(dat.host_halo, dtype=bool)
         host_disk = np.array(dat.host_disk, dtype=bool)
@@ -184,51 +181,24 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
         time = np.array(dat.time,dtype=float)
 
 
+
         for i,t2 in enumerate(time[1:]):
                 i += 1
-                if sat_disk[i-1] and sat_halo[i]:
+                if sat_disk[i-1] and (sat_halo[i] or outside_sat[i]):
                     out = dat[time==t2].copy()
                     ejected = pd.concat([ejected, out])
                     
-                if sat_halo[i-1] and sat_disk[i]:
+                if (sat_halo[i-1] or outside_sat[i-1]) and sat_disk[i]:
                     out = dat[time==t2].copy()
                     cooled = pd.concat([cooled, out])
                     
-                if (sat_halo[i-1] or sat_disk[i-1]) and (host_disk[i] or host_halo[i] or IGM[i] or other_sat[i]):
+                if in_sat[i-1] and outside_sat[i]:
                     out = dat[time==t2].copy()
-                    if sat_halo[i-1]:
-                        out['state1'] = ['sat_halo']
-                    elif sat_disk[i-1]:
-                        out['state1'] = ['sat_disk']
-                
                     expelled = pd.concat([expelled, out])
                     
-                if (host_disk[i-1] or host_halo[i-1] or IGM[i-1] or other_sat[i-1]) and (sat_halo[i] or sat_disk[i]):
+                if outside_sat[i-1] and in_sat[i]:
                     out = dat[time==t2].copy()
-                    if sat_halo[i]:
-                        out['state2'] = ['sat_halo']
-                    elif sat_disk[i]:
-                        out['state2'] = ['sat_disk']
-                
                     accreted = pd.concat([accreted, out])
-                
-                
-#                 if (sat_halo[i-1] or host_halo[i-1] or host_disk[i-1] or IGM[i-1]) and sat_disk[i]:
-#                     out = dat[time==t2].copy()
-#                     cooled = pd.concat([cooled, out])
-                    
-#                 if (host_halo[i-1] or IGM[i-1] or host_disk[i-1]) and sat_halo[i]:
-#                     out = dat[time==t2].copy()
-#                     accreted = pd.concat([accreted, out])
-                
-#                 if sat_disk[i-1] and (sat_halo[i] or host_halo[i] or host_disk[i] or IGM[i]):
-#                     out = dat[time==t2].copy()
-#                     ejected = pd.concat([ejected, out])
-                    
-#                 if sat_halo[i-1] and (host_halo[i] or host_disk[i] or IGM[i]):    
-#                     out = dat[time==t2].copy()
-#                     expelled = pd.concat([expelled, out])
-
 
     # apply the calc_angles function along the rows of ejected and expelled
     print('Calculating ejection angles')
