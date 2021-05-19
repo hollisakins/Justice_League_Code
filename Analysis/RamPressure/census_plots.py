@@ -1,61 +1,6 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import pickle
-from bulk import *
+from analysis import *
 from tqdm import tqdm
 tqdm.pandas()
-
-
-mpl.rc('font',**{'family':'serif','monospace':['Palatino']})
-mpl.rc('text', usetex=True)
-plt.rcParams['figure.constrained_layout.use'] = False
-mpl.rcParams.update({'font.size': 9})
-
-age = 13.800797497330507
-
-
-def read_timesteps(sim):
-    '''Function to read in the data file which contains quenching and infall times'''
-    data = []
-    with open(f'../../Data/timesteps_data/{sim}.data', 'rb') as f:
-        while True:
-            try:
-                data.append(pickle.load(f,encoding='latin1'))
-            except EOFError:
-                break
-
-    data = pd.DataFrame(data)
-    return data
-
-def read_timescales():
-    '''Function to read in the data file which contains quenching and infall times'''
-    data = []
-    with open('../../Data/QuenchingTimescales.data', 'rb') as f:
-        while True:
-            try:
-                data.append(pickle.load(f,encoding='latin1'))
-            except EOFError:
-                break
-
-    data = pd.DataFrame(data)
-    return data
-
-def read_infall_properties():
-    '''Function to read in the data file with quenching timescales and satellite properties at infall.'''
-    data = []
-    with open(f'../../Data/QuenchingTimescales_InfallProperties.data','rb') as f:
-        while True:
-            try: 
-                data.append(pickle.load(f))
-            except EOFError:
-                break
-            
-    data = pd.DataFrame(data)
-    data['timescale'] = data.tinfall - data.tquench
-    
-    return data
 
 def determine_if_formed_in_sat(s,p):
     p = p[p.pid==s.igasorder]
@@ -192,6 +137,7 @@ print(*np.array(keys)[np.argsort(taus)])
 
 ###
 
+# already sorted by quenching timescale
 keys = ['h329_33','h148_278','h229_27','h242_41','h148_13','h229_23','h229_55','h148_283','h148_45','h242_24','h229_22','h148_68','h148_37','h242_80','h229_20','h148_28']
 
 fig = plt.figure(figsize=(7.5, 7.5), dpi=300)

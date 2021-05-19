@@ -1,28 +1,14 @@
-import numpy as np
-import pynbody
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import pickle
-from bulk import *
+### This code generates a figure showing the motion of a galaxy through the CGM alongside its ram pressure ratio over time
+### This will be updated in the future, since I don't really like the way this plot fits into the overall narrative
+
+
+from analysis import *
 import sys
 
 sim = str(sys.argv[1])
 haloid = int(sys.argv[2])
 
-#if sim=='h148' and haloid==68:
-    
-
-
-mpl.rc('font',**{'family':'serif','monospace':['Palatino']})
-mpl.rc('text', usetex=True)
-plt.rcParams['figure.constrained_layout.use'] = False
-mpl.rcParams.update({'font.size': 9})
-
-age = 13.800797497330507
-hubble =  0.6776942783267969
-
-from particletracking import get_stored_filepaths_haloids as g
-filepaths, haloids, h1ids = g(sim,haloid)
+filepaths, haloids, h1ids = get_stored_filepaths_haloids(sim,haloid)
 path = filepaths[0]
 print('Loading',path)
 

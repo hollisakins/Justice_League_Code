@@ -1,76 +1,11 @@
-import pynbody
-import pandas as pd
-import numpy as np
-import pickle
+from analysis import *
+from base import *
 import sys
 import tqdm
 import os
-from bulk import *
 import fsps
 
 hubble =  0.6776942783267969
-
-# h148 28
-# h148 37
-# h148 68
-# h242 80
-# h229 20
-# h229 22
-# h242 24
-# h148 13
-
-
-def get_stored_filepaths_haloids(sim,z0haloid):
-    # get snapshot paths and haloids from stored file
-    with open('../../Data/filepaths_haloids.pickle','rb') as f:
-        d = pickle.load(f)
-    try:
-        filepaths = d['filepaths'][sim]
-    except KeyError:
-        print("sim must be one of 'h148','h229','h242','h329'")
-        raise
-    try:
-        haloids = d['haloids'][sim][z0haloid]
-        h1ids = d['haloids'][sim][1]
-    except KeyError:
-        print('z0haloid not found, perhaps this is a halo that has no stars at z=0, and therefore isnt tracked')
-        raise
-    return filepaths,haloids,h1ids
-    
-
-def read_timesteps(simname):
-    data = []
-    with open(f'../../Data/timesteps_data/{simname}.data','rb') as f:
-        while True:
-            try: 
-                data.append(pickle.load(f))
-            except EOFError:
-                break
-    
-    data = pd.DataFrame(data)
-    return data
-
-def get_snap_start(sim,z0haloid):
-    print(f'\t {sim}-{z0haloid}: Getting starting snapshot (dist = 2 Rvir)')
-    filepaths,haloids,h1ids = get_stored_filepaths_haloids(sim,z0haloid)
-    ts = read_timesteps(sim)
-    ts = ts[ts.z0haloid == z0haloid]
-
-    dist = np.array(ts.h1dist, dtype=float)
-    time = np.array(ts.time, dtype=float)
-    ti = np.min(time[dist <= 2])
-
-    for i,f in enumerate(filepaths):
-        s = pynbody.load(f)
-        t = float(s.properties['time'].in_units('Gyr'))
-        if t<ti:
-            snap_start = i
-            break
-        else: 
-            continue
-    print(f'\t {sim}-{z0haloid}: Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!
-    return snap_start
-
 
 def vec_to_xform(vec):
     vec_in = np.asarray(vec)
@@ -122,7 +57,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         nDM = len(sat.dm)
         Xcs, Ycs, Zcs = np.array([]), np.array([]), np.array([])
         for halo in h:
-            if len(halo.dm) > nDM*0.9:
+            if len(halo.dm) > nDM*0.1:
                 r = np.array([halo.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
                 if not (r==r_sat).all():
                     Xcs = np.append(Xcs, r[0])

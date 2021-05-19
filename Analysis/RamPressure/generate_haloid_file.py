@@ -1,3 +1,6 @@
+### This file takes the snapshot numbers and main progenitor halo IDs and writes them to a file
+### That file can then be read in via the get_stored_filepaths_haloids(sim,z0haloid) function defined in base.py
+
 import pickle
 
 snapnums_h148 = ['004096', '003968', '003840', '003712', '003606', '003584', '003456', '003328', '003200', '003195', 
