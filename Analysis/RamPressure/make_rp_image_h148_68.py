@@ -61,6 +61,7 @@ filepaths, haloids, h1ids = get_stored_filepaths_haloids(sim,haloid)
 ts = np.array([t0,t1,t2,t3])
 ys = np.array([y0,y1,y2,y3])
 
+fs, hs = np.array([]),np.array([])
 for i, filepath in enumerate(filepaths):
     s = pynbody.load(filepath)
     h = haloids[i]
