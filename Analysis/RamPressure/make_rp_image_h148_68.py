@@ -67,18 +67,19 @@ if len(haloids) >= snap_start:
 
 ts = np.array([t0,t1,t2,t3])
 ys = np.array([y0,y1,y2,y3])
-fs, hs = np.array([]),np.array([])
+fs, hs, h1s = np.array([]),np.array([]),np.array([])
 for i, filepath in enumerate(filepaths):
     s = pynbody.load(filepath)
     h = haloids[i]
+    h1 = h1ids[i]
     t = s.properties['time'].in_units('Gyr')
     if any((t - ts) < 0.05):
         fs = np.append(fs, filepath)
         hs = np.append(hs, h)
-    
+        h1s = np.append(h1s, h1)
 
 i = 1
-for iax,t,y,f,hid in zip(img_axes,ts,ys,fs,hs):
+for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
     print(f'Loading snap {i}')
     i += 1
     
@@ -86,7 +87,7 @@ for iax,t,y,f,hid in zip(img_axes,ts,ys,fs,hs):
     s.physical_units()
     h = s.halos()
     halo = h[hid]
-    host = h[1] # may not always be halo 1! (but probably is)
+    host = h[h1id] # may not always be halo 1! (but probably is)
     a = s.properties['a']
     print('\t Made halo catalog')
         
@@ -100,22 +101,31 @@ for iax,t,y,f,hid in zip(img_axes,ts,ys,fs,hs):
     tx = pynbody.transformation.inverse_v_translate(tx, vcen)
 
     print('\t Getting velocity vector') # may want to get only from inner 10 kpc
-    gvel = halo.g['vel']
-    gr = np.array(halo.g['r'].in_units('kpc'),dtype=float)
-    gmass = halo.g['mass']
-    vel = np.average(gvel[gr < 10], axis=0, weights=gmass[gr < 10])
-    Rvir = halo.properties['Rvir']/hubble*a
-    sphere1 = pynbody.filt.Sphere(f'{round(Rvir,0)} kpc')
-    sphere2 = pynbody.filt.Sphere(f'{round(1.5*Rvir,0)} kpc')
-    ssub = s.g[sphere2 & ~sphere1]
-    vel_CGM = np.average(ssub['vel'], axis=0, weights=ssub['mass'])
-    vel -= vel_CGM
+    try:
+        vel = np.average(halo.g['vel'], axis=0, weights=halo.g['mass'])
+    except ZeroDivisionError:
+        vel = np.average(halo.s['vel'], axis=0, weights=halo.s['mass'])
+
+    vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) 
+    vel -= vel_host
+    
+    
+#     gvel = halo.g['vel']
+#     gr = np.array(halo.g['r'].in_units('kpc'),dtype=float)
+#     gmass = halo.g['mass']
+#     vel = np.average(gvel[gr < 10], axis=0, weights=gmass[gr < 10])
+#     Rvir = halo.properties['Rvir']/hubble*a
+#     sphere1 = pynbody.filt.Sphere(f'{round(Rvir,0)} kpc')
+#     sphere2 = pynbody.filt.Sphere(f'{round(1.5*Rvir,0)} kpc')
+#     ssub = s.g[sphere2 & ~sphere1]
+#     vel_CGM = np.average(ssub['vel'], axis=0, weights=ssub['mass'])
+#     vel -= vel_CGM
     
     print('\t Transforming snapshot')
     trans = vec_to_xform(vel)
     tx = pynbody.transformation.transform(tx, trans)
     
-    smin, smax = -40, 40
+    smin, smax = -100, 100
     gas_vmin, gas_vmax = 6e2, 3e5
     
     print('\t Making gas image')    
