@@ -43,8 +43,12 @@ ax.semilogy()
 ax.set_xlabel('Time [Gyr]')
 ax.set_ylabel(r'$\mathcal{P} \equiv P_{\rm ram}/P_{\rm rest}$')
 
-for i in img_axes:
-    i.tick_params(left=False, right=False, bottom=False, top=False, labelleft=False, labelbottom=False)
+for i in [img0,img1,img2,img3]:
+    i.tick_params(labelleft=False, labelbottom=False)
+
+img0.tick_params(left=True, labelleft=True)
+img0.set_ylabel(r'$y$ [kpc]')
+
 
 t0 = 7.767072
 t1 = 9.060013
@@ -148,8 +152,9 @@ for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
     tx = pynbody.transformation.transform(tx, trans)
     
     
-    smin, smax = -40, 40
+    smin, smax = -60, 60
     gas_vmin, gas_vmax = 6e2, 3e5
+    Rvir = halo.properties['Rvir']/hubble*a
     
     print('\t Making gas image')    
     im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str(2*(smax-smin)))], width='%s kpc' % str(smax-smin),
@@ -157,13 +162,8 @@ for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
                                          vector_color='cyan', vector_resolution = 15, av_z='rho', ret_im=True, denoise=False,
                                          approximate_fast=False, subplot=iax, show_cbar=False, quiverkey=False)
 
-
-    from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
-    size = 20
-    if i==1:
-        bar = AnchoredSizeBar(iax.transData, size, str(size)+' kpc', loc='lower right', bbox_to_anchor=(1.,1.),
-                              bbox_transform=iax.transAxes, color='k', frameon=False)
-        iax.add_artist(bar)
+    circle = plt.Circle((0,0), Rvir, color = 'w', linestyle='-', fill=False, linewidth=1)
+    iax.add_artist(circle)
 
 
         
