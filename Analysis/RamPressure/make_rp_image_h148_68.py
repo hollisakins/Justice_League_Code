@@ -58,9 +58,15 @@ y3 = y[np.argmin(np.abs(x-t3))]
 
 print('Getting filepaths for four snapshots...')
 filepaths, haloids, h1ids = get_stored_filepaths_haloids(sim,haloid)
+snap_start = get_snap_start(sim,haloid)
+    
+if len(haloids) >= snap_start:
+    filepaths = np.flip(filepaths[:snap_start+1])
+    haloids = np.flip(haloids[:snap_start+1])
+    h1ids = np.flip(h1ids[:snap_start+1])
+
 ts = np.array([t0,t1,t2,t3])
 ys = np.array([y0,y1,y2,y3])
-
 fs, hs = np.array([]),np.array([])
 for i, filepath in enumerate(filepaths):
     s = pynbody.load(filepath)
