@@ -150,7 +150,7 @@ for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
     tx = pynbody.transformation.transform(tx, trans)
     
     smin, smax = -30, 30
-    gas_vmin, gas_vmax = 1e2, 1e7
+    gas_vmin, gas_vmax = 1e4, 1e6
     
     print('\t Making gas image')    
     im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str((smax-smin)))], width='%s kpc' % str(smax-smin),
