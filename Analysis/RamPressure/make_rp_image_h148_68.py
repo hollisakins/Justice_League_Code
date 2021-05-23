@@ -87,6 +87,7 @@ for iax,t,y,f,hid in zip(img_axes,ts,ys,fs,hs):
     h = s.halos()
     halo = h[hid]
     host = h[1] # may not always be halo 1! (but probably is)
+    a = s.properties['a']
     print('\t Made halo catalog')
         
     # below code adapted from pynbody.analysis.angmom.sideon()
@@ -99,9 +100,17 @@ for iax,t,y,f,hid in zip(img_axes,ts,ys,fs,hs):
     tx = pynbody.transformation.inverse_v_translate(tx, vcen)
 
     print('\t Getting velocity vector') # may want to get only from inner 10 kpc
-    vel = np.average(halo.g['vel'], axis=0, weights=halo.g['mass'])
-    vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass'])
-    vel -= vel_host
+    gvel = halo.g['vel']
+    gr = np.array(halo.g['r'].in_units('kpc'),dtype=float)
+    gmass = halo.g['mass']
+    vel = np.average(gvel[r < 10], axis=0, weights=gmass)
+    Rvir = halo.properties['Rvir']/hubble*a
+    sphere1 = pynbody.filt.Sphere(f'{round(Rvir,0)} kpc')
+    sphere2 = pynbody.filt.Sphere(f'{round(1.5*Rvir,0)} kpc')
+    svel = s.g['vel']
+    smass = s.g['mass']
+    vel_CGM = np.average(svel[sphere2 & ~sphere1], axis=0, weights=smass[sphere2 & ~sphere1])
+    vel -= vel_CGM
     
     print('\t Transforming snapshot')
     trans = vec_to_xform(vel)
