@@ -44,8 +44,12 @@ ax.set_xlabel('Time [Gyr]')
 ax.set_ylabel(r'$\mathcal{P} \equiv P_{\rm ram}/P_{\rm rest}$')
 
 for i in img_axes:
-    i.tick_params(left=False, right=False, bottom=False, top=False, labelleft=False, labelbottom=False)
+    i.tick_params(labelleft=False, labelbottom=False)
+    
+img0.tick_params(left=True, labelleft=True)
+img0.set_ylabel(r'$y$ [kpc]')
 
+    
 t0 = 4.534719
 t1 = 7.120602
 t2 = 8.608831
@@ -144,11 +148,11 @@ for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
     trans = vec_to_xform(vel)
     tx = pynbody.transformation.transform(tx, trans)
     
-    smin, smax = -100, 100
+    smin, smax = -30, 30
     gas_vmin, gas_vmax = 6e2, 3e5
     
     print('\t Making gas image')    
-    im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str((smax-smin)))], width='%s kpc' % str(smax-smin),
+    im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str(1.5*(smax-smin)))], width='%s kpc' % str(smax-smin),
                                          cmap='viridis', vmin=gas_vmin, vmax=gas_vmax,
                                          vector_color='cyan', vector_resolution = 15, av_z='rho', ret_im=True, denoise=False,
                                          approximate_fast=False, subplot=iax, show_cbar=False, quiverkey=False)
