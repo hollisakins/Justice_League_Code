@@ -103,7 +103,7 @@ for i, filepath in enumerate(filepaths):
 
 i = 1
 for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
-    if i > 1: continue;
+
     print(f'Loading snap {i}')
     i += 1
     
@@ -155,7 +155,7 @@ for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
     print('\t Making gas image')    
     im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str((smax-smin)))], width='%s kpc' % str(smax-smin),
                                          cmap='viridis', vmin=gas_vmin, vmax=gas_vmax,
-                                         vector_color='cyan', vector_resolution = 15, av_z='rho', ret_im=True, denoise=False,
+                                         vector_color='cyan', vector_resolution = 15, ret_im=True, denoise=False,
                                          approximate_fast=False, subplot=iax, show_cbar=False, quiverkey=False)
 
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
