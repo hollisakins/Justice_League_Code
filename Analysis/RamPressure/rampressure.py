@@ -5,8 +5,7 @@ import tqdm
 import os
 import fsps
 
-hubble =  0.6776942783267969
-
+# used to align pynbody coordinate system to a specified vector
 def vec_to_xform(vec):
     vec_in = np.asarray(vec)
     vec_in = vec_in / np.sum(vec_in ** 2).sum() ** 0.5
@@ -16,28 +15,28 @@ def vec_to_xform(vec):
     matr = np.concatenate((vec_p2, vec_in, vec_p1)).reshape((3, 3))
     return matr
 
-
+# where the actual ram pressure calculations take place
 def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
     output_tot = pd.DataFrame()
     
     #print('Starting calculations...')
     for f,haloid,h1id in tqdm.tqdm(zip(filepaths,haloids,h1ids),total=len(filepaths)):
+        # load simulation
         s = pynbody.load(f)
         s.physical_units()
         h = s.halos()
         sat = h[haloid]
         host = h[h1id]
+        
+        # save time t and scale factor a
         t = float(s.properties['time'].in_units('Gyr'))
         a = float(s.properties['a'])
 
         output = pd.DataFrame()
         output['t'] = [t]
         output['a'] = [a]
-        #print(f'\n\t Time = {t:.1f} Gyr')
-
-        # RAM PRESSURE CALCULATIONS (SIMPLE)
         
-        ## positions and velocities
+        # positions and velocities
         r_sat = np.array([sat.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
         r_host = np.array([host.properties[k]/hubble*a for k in ['Xc','Yc','Zc']])
         r_rel = r_sat - r_host
@@ -49,11 +48,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         v_host = np.array([host.properties[k] for k in ['VXc','VYc','VZc']])
         v_rel = v_sat - v_host
         v_rel_mag = np.linalg.norm(v_rel)
-
         print(f'\t {sim}-{z0haloid}: Relative velocity = {v_rel_mag:.2f} km/s')
 
-        
-        # nearest neighbor distance
+        # nearest neighbor distance (topic of ongoing investigation)
         nDM = len(sat.dm)
         Xcs, Ycs, Zcs = np.array([]), np.array([]), np.array([])
         for halo in h:
@@ -70,8 +67,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         print(f'\t {sim}-{z0haloid}: dNN = {np.min(dists):.1f} kpc')
         output['dNN'] = [np.min(dists)]
         
-        
-        ## galaxy properties
+        # basic galaxy properties
         M_star = np.sum(sat.s['mass'].in_units('Msol'))
         M_gas = np.sum(sat.g['mass'].in_units('Msol'))
         rvir = sat.properties['Rvir']/hubble*a
@@ -81,11 +77,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['M_gas'] = [M_gas]
         output['satRvir'] = [rvir]
         output['hostRvir'] = [h1rvir]
-
         print(f'\t {sim}-{z0haloid}: Satellite M_gas = {M_gas:.1e} Msun')
 
-
-        ## calculate rho_CGM from spherical density profile
+        # simple ram pressure calculations: calculate rho_CGM from spherical density profile
         pynbody.analysis.halo.center(host)
         pg = pynbody.analysis.profile.Profile(s.g, min=0.01, max=2*h1dist, ndim=3)
         rbins = pg['rbins']
@@ -101,11 +95,10 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         print(f'\t {sim}-{z0haloid}: Simple P_ram = {Pram:.1e}')
 
 
-        # RAM PRESSURE CALCULATIONS (ADVANCED)
-        # roughly following the method of Simons et al: using a cylinder in front of the satellite
-        # but we want to exclude those that have already been in the satellite
+        # advanced ram pressure calculations: calculate rho, vel from cylinder in front of satellite
         
-        # below code adapted from pynbody.analysis.angmom.sideon() to transform the snapshot so that the vector 'vel' points in the +y direction
+        # below code is adapted from pynbody.analysis.angmom.sideon() 
+        # transform the snapshot so that the vector 'vel' points in the +y direction
         top = s
         print(f'\t {sim}-{z0haloid}: Centering positions')
         cen = pynbody.analysis.halo.center(sat, retcen=True)
@@ -114,26 +107,21 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         vcen = pynbody.analysis.halo.vel_center(sat, retcen=True) 
         tx = pynbody.transformation.inverse_v_translate(tx, vcen)
         
+        # try to get vel from gas particles, but if there are no gas particles, use stars
         print(f'\t {sim}-{z0haloid}: Getting velocity vector') 
         try:
             vel = np.average(sat.g['vel'], axis=0, weights=sat.g['mass'])
         except ZeroDivisionError:
             vel = np.average(sat.s['vel'], axis=0, weights=sat.s['mass'])
             
-        vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) # not sure why I'm subtracting the host velocity but leaving it for now
+        vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) 
         vel -= vel_host
 
         print(f'\t {sim}-{z0haloid}: Transforming snapshot')
         trans = vec_to_xform(vel)
         tx = pynbody.transformation.transform(tx, trans)
         
-#         # get R_gal from the particletracking code
-#         data = read_tracked_particles(sim, z0haloid)
-#         tmin = np.unique(data.time)[np.argmin(np.abs(np.unique(data.time)-t))]
-#         R_gal = np.mean(data[data.time==tmin].r_gal)
-#         print(f'\t {sim}-{z0haloid}:  R_gal = {R_gal:.2f} kpc')
-        
-        
+        # define cylinder size and filter out those particles
         radius = 0.5*rvir
         height = 0.75 * radius
         center = (0, rvir + height/2, 0)
@@ -142,6 +130,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         print(f'\t {sim}-{z0haloid}: Identified {len(env)} gas particles to calculate wind properties')
         output['n_CGM'] = [len(env)]
 
+        # try to calculate CGM properties, but if you can't then set rho, vel to 0 (i.e. no gas particles)
         try:
             vel_CGM = np.linalg.norm(np.average(env['vel'],axis=0,weights=env['mass'])) # should be in units of Msun kpc**-3
             rho_CGM = np.average(env['rho'], weights=env['mass']) # should be in units of 
@@ -162,10 +151,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         print(f'\t {sim}-{z0haloid}: Advanced vel_CGM = {vel_CGM:.2f}')
         print(f'\t {sim}-{z0haloid}: Advanced rho_CGM = {rho_CGM:.1e}')
         print(f'\t {sim}-{z0haloid}: Advanced P_ram = {Pram:.1e}')
-        
-        #print(f'Mean vel of sat gas particles in this transform:', np.linalg.norm(np.mean(sat.g['vel'], axis=0, weights=sat.g['mass'])))
 
-        # RESTORING PRESSURE CALCULATIONS
+        # restoring pressure calculations
+        # try to center the satellite. if you can't, then that means Prest = 0 (i.e. Mgas=0)
         try:
             pynbody.analysis.halo.center(sat)
             calc_rest = True
@@ -192,19 +180,21 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['dphidz'] = [dphidz]
     
         
-        # sfr calculations
+        # sfr calculations: use FSPS to calculate SFRs from formation masses of stars, not current masses
         star_masses = np.array(sat.s['mass'].in_units('Msol'),dtype=float)
         star_metals = np.array(sat.s['metals'], dtype=float)
         star_ages = np.array(sat.s['age'].in_units('Myr'),dtype=float)
         size = len(star_ages)
         
-        fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1, imf_type=2, zred=0.0, add_dust_emission=False) # CHECK THESE
+        # construct simple stellar population with fsps
+        fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1, imf_type=2, zred=0.0, add_dust_emission=False) 
         solar_Z = 0.0196
         
         star_masses = star_masses[star_ages <= 100]
         star_metals = star_metals[star_ages <= 100]
         star_ages = star_ages[star_ages <= 100]
         print(f'\t {sim}-{z0haloid}: performing FSPS calculations on {len(star_masses)} star particles (subset of {size} stars)')
+        
         if len(star_masses)==0:
             SFR = 0
         else:
@@ -212,7 +202,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
             for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
                 fsps_ssp.params['logzsol'] = np.log10(metallicity/solar_Z)
                 mass_remaining = fsps_ssp.stellar_mass
-                massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining))
+                massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining)) 
 
             SFR = np.sum(massform)/100e6
             

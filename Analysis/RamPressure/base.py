@@ -23,6 +23,58 @@ mpl.rcParams.update({'figure.dpi': 200,
                      'ytick.right': True})
 
 
+# function to plot a median line over some data
+def plot_median(ax,x,y,logx=False,logy=False,bins=None,std=False,**kwargs):
+    from scipy.stats import binned_statistic
+    if logx:
+        x = np.log10(x)
+        condx = ~np.isnan(x) & ~np.isinf(x)
+    else:
+        condx = x < 2.5
+    if logy:
+        y = np.log10(y)
+        condy = ~np.isnan(y) & ~np.isinf(y)
+    else:
+        condy = y > 0 
+        
+    cond = condx & condy
+    x, y = x[cond], y[cond]
+        
+    if bins==None:
+        bins = np.linspace(np.min(x), np.max(x), 10)
+    if type(bins)==int:
+        bins = np.linspace(np.min(x), np.max(x), bins)
+    
+    # calculate median
+    median, bins, binnumber = binned_statistic(x,y,bins=bins,statistic='median')
+    bc = 0.5*(bins[1:]+bins[:-1])
+    
+    if logx:
+        bc = np.power(10,bc)
+        
+    if std:
+        std, bins, binnumber = binned_statistic(x,y,bins=bins,statistic='std')
+        if 'color' in kwargs:
+            mycolor = kwargs.get('color')
+        else:
+            mycolor = 'tab:blue'
+            
+        ymin, ymax = median-std, median+std
+        if logy:
+            ymin, ymax = np.power(10,ymin), np.power(10,ymax)
+            
+        ax.fill_between(bc,ymin, ymax, fc=mycolor, ec=None, alpha=0.15)
+
+        
+    if logy:
+        median = np.power(10,median) 
+        
+    ax.plot(bc, median, **kwargs)
+    
+setattr(mpl.axes.Axes, "plot_median", plot_median)
+
+
+
 # define functions for basic data manipulation, importing, etc. used by everything
 def get_stored_filepaths_haloids(sim,z0haloid):
     # get snapshot paths and haloids from stored file
@@ -85,6 +137,7 @@ def read_infall_properties():
     
     return data
 
+# determines the snapshot at which to start tracking (first snapshot where satellite is within 2 Rvir of host)
 def get_snap_start(sim,z0haloid):
     print(f'\t {sim}-{z0haloid}: Getting starting snapshot (dist = 2 Rvir)')
     filepaths,haloids,h1ids = get_stored_filepaths_haloids(sim,z0haloid)

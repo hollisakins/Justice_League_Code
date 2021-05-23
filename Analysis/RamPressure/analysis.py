@@ -283,3 +283,122 @@ def read_all_ejected_expelled():
     print(f'Returning (ejected, cooled, expelled, accreted) for all available satellites...')
     return ejected, cooled, expelled, accreted
 
+def read_ram_pressure(sim, haloid):
+    timescales = read_timescales()
+    path = '../../Data/ram_pressure.hdf5'
+    key = f'{sim}_{haloid}'
+
+    data = pd.read_hdf(path, key=key)
+    data['Pram_adv'] = np.array(data.Pram_adv,dtype=float)
+    data['Pram'] = np.array(data.Pram,dtype=float)
+    data['Prest'] = np.array(data.Prest,dtype=float)
+    data['ratio'] = data.Pram_adv / data.Prest
+    dt = np.array(data.t)[1:] - np.array(data.t)[:-1]
+    dt = np.append(dt[0],dt)
+    data['dt'] = dt
+    
+    timescales = read_timescales()
+    ts = timescales[(timescales.sim==sim)&(timescales.haloid==haloid)]
+    data['tau'] = ts.tinfall.iloc[0] - ts.tquench.iloc[0]    
+    data['tquench'] = age - ts.tquench.iloc[0]   
+
+    # load ejected/expelled data
+    ejected,cooled,expelled,accreted = read_ejected_expelled(sim, haloid)
+
+    Mgas_div = np.array(data.M_gas,dtype=float)
+    Mgas_div = np.append(Mgas_div[0], Mgas_div[:-1])
+    data['Mgas_div'] = Mgas_div
+    
+    particles = read_tracked_particles(sim,haloid)
+    particles['m_disk'] = np.array(particles.mass,dtype=float)*np.array(particles.sat_disk,dtype=int)
+    
+    data = pd.merge_asof(data, particles.groupby(['time']).m_disk.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'m_disk':'M_disk'})
+    
+    Mdisk_div = np.array(data.M_disk,dtype=float)
+    Mdisk_div = np.append(Mdisk_div[0], Mdisk_div[:-1])
+    data['Mdisk_div'] = Mdisk_div
+    
+    # first, ejected gas
+    data = pd.merge_asof(data, ejected.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'mass':'M_ejected'})
+    data['Mdot_ejected'] = data.M_ejected / data.dt
+    data['Mdot_ejected_by_Mgas'] = data.Mdot_ejected / Mgas_div
+    data['Mdot_ejected_by_Mdisk'] = data.Mdot_ejected / Mdisk_div
+
+    # next, cooled gas
+    data = pd.merge_asof(data, cooled.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'mass':'M_cooled'})
+    data['Mdot_cooled'] = data.M_cooled / data.dt
+    data['Mdot_cooled_by_Mgas'] = data.Mdot_cooled / Mgas_div
+    data['Mdot_cooled_by_Mdisk'] = data.Mdot_cooled / Mdisk_div
+
+    # next, expelled gas
+    expelled_disk = expelled[expelled.state1 == 'sat_disk']
+    expelled_th30 = expelled[expelled.angle <= 30]
+    
+    data = pd.merge_asof(data, expelled.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'mass':'M_expelled'})
+    data['Mdot_expelled'] = data.M_expelled / data.dt
+    data['Mdot_expelled_by_Mgas'] = data.Mdot_expelled / Mgas_div
+
+    data = pd.merge_asof(data, expelled_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'mass':'M_expelled_disk'})
+    data['Mdot_expelled_disk'] = data.M_expelled_disk / data.dt
+    data['Mdot_expelled_disk_by_Mgas'] = data.Mdot_expelled_disk / Mgas_div
+    data['Mdot_expelled_disk_by_Mdisk'] = data.Mdot_expelled_disk / Mdisk_div
+
+    data = pd.merge_asof(data, expelled_th30.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'mass':'M_expelled_th30'})
+    data['Mdot_expelled_th30'] = data.M_expelled_th30 / data.dt
+    data['Mdot_expelled_th30_by_Mgas'] = data.Mdot_expelled_th30 / Mgas_div
+    
+    # finally, accreted gas
+    accreted_disk = accreted[accreted.state2 == 'sat_disk']
+    
+    data = pd.merge_asof(data, accreted.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'mass':'M_accreted'})
+    data['Mdot_accreted'] = data.M_accreted / data.dt
+    data['Mdot_accreted_by_Mgas'] = data.Mdot_accreted / Mgas_div
+
+    data = pd.merge_asof(data, accreted_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'mass':'M_accreted_disk'})
+    data['Mdot_accreted_disk'] = data.M_accreted_disk / data.dt
+    data['Mdot_accreted_disk_by_Mgas'] = data.Mdot_accreted_disk / Mgas_div
+    data['Mdot_accreted_disk_by_Mdisk'] = data.Mdot_accreted_disk / Mdisk_div
+
+    
+    dM_gas = np.array(data.M_gas,dtype=float)[1:] - np.array(data.M_gas,dtype=float)[:-1]
+    dM_gas = np.append([np.nan],dM_gas)
+    data['Mdot_gas'] = dM_gas / np.array(data.dt)
+    
+    
+    dM_disk = np.array(data.M_disk,dtype=float)[1:] - np.array(data.M_disk,dtype=float)[:-1]
+    dM_disk = np.append([np.nan],dM_disk)
+    data['Mdot_disk'] = dM_disk / np.array(data.dt)
+    
+    data['key'] = key
+    
+    M_gas_init = np.array(data.M_gas)[np.argmin(data.t)]
+    data['f_gas'] = np.array(data.M_gas)/M_gas_init
+    
+    return data
+ 
+    
+def read_all_ram_pressure():
+    data_all = pd.DataFrame()
+    
+    keys = ['h148_13','h148_28','h148_37','h148_45','h148_68','h148_80','h148_283',
+            'h148_278','h148_329','h229_20','h229_22','h229_23','h229_27','h229_55',
+            'h242_24','h242_41','h242_80','h329_33','h329_137']
+    
+    i = 1
+    for key in keys:
+        print(i, end=' ')
+        i += 1
+        sim = key[:4]
+        haloid = int(key[5:])
+        data = read_ram_pressure(sim, haloid)
+        data_all = pd.concat([data_all,data])  
+    
+    return data_all

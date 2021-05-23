@@ -1,74 +1,9 @@
-import pynbody
-import pandas as pd
-import numpy as np
-import pickle
+from base import *
 import sys
 import tqdm
 import os
 
 hubble =  0.6776942783267969
-
-# h148 28
-# h148 37
-# h148 68
-# h242 80
-# h229 20
-# h229 22
-# h242 24
-# h148 13
-
-
-def get_stored_filepaths_haloids(sim,z0haloid):
-    # get snapshot paths and haloids from stored file
-    with open('../../Data/filepaths_haloids.pickle','rb') as f:
-        d = pickle.load(f)
-    try:
-        filepaths = d['filepaths'][sim]
-    except KeyError:
-        print("sim must be one of 'h148','h229','h242','h329'")
-        raise
-    try:
-        haloids = d['haloids'][sim][z0haloid]
-        h1ids = d['haloids'][sim][1]
-    except KeyError:
-        print('z0haloid not found, perhaps this is a halo that has no stars at z=0, and therefore isnt tracked')
-        raise
-    return filepaths,haloids,h1ids
-    
-
-def read_timesteps(simname):
-    data = []
-    with open(f'../../Data/timesteps_data/{simname}.data','rb') as f:
-        while True:
-            try: 
-                data.append(pickle.load(f))
-            except EOFError:
-                break
-    
-    data = pd.DataFrame(data)
-    return data
-
-def get_snap_start(sim,z0haloid):
-    print('Getting starting snapshot (dist = 2 Rvir)')
-    filepaths,haloids,h1ids = get_stored_filepaths_haloids(sim,z0haloid)
-    ts = read_timesteps(sim)
-    ts = ts[ts.z0haloid == z0haloid]
-
-    dist = np.array(ts.h1dist, dtype=float) # doesn't need scale factor correction since its r/Rvir
-    time = np.array(ts.time, dtype=float)
-    ti = np.min(time[dist <= 2])
-
-    for i,f in enumerate(filepaths):
-        s = pynbody.load(f)
-        t = float(s.properties['time'].in_units('Gyr'))
-        if t<ti:
-            snap_start = i
-            break
-        else: 
-            continue
-    print(f'Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!
-    return snap_start
-
 
 def get_iords(sim, z0haloid, filepaths, haloids):
     # '''Get the particle indices (iords) for all gas particles that have been in the halo since snap_start.''''
@@ -93,8 +28,6 @@ def get_iords(sim, z0haloid, filepaths, haloids):
             pickle.dump(iords,outfile)
 
     return iords
-
-
 
 def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
     # now we need to start tracking, so we need to get the iords
