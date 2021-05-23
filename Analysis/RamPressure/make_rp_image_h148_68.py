@@ -43,7 +43,7 @@ ax.semilogy()
 ax.set_xlabel('Time [Gyr]')
 ax.set_ylabel(r'$\mathcal{P} \equiv P_{\rm ram}/P_{\rm rest}$')
 
-for i in image_axes:
+for i in img_axes:
     i.tick_params(left=False, right=False, bottom=False, top=False, labelleft=False, labelbottom=False)
 
 t0 = 7.767072
