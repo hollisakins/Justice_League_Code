@@ -90,7 +90,9 @@ for i, filepath in enumerate(filepaths):
     h = haloids[i]
     h1 = h1ids[i]
     t = s.properties['time'].in_units('Gyr')
-    if any((t - ts) < 0.01):
+    
+    
+    if any(np.abs(t - ts) < 0.05):
         fs = np.append(fs, filepath)
         hs = np.append(hs, h)
         h1s = np.append(h1s, h1)
