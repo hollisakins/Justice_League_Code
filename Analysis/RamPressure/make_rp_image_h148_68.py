@@ -103,7 +103,7 @@ for iax,t,y,f,hid in zip(img_axes,ts,ys,fs,hs):
     gvel = halo.g['vel']
     gr = np.array(halo.g['r'].in_units('kpc'),dtype=float)
     gmass = halo.g['mass']
-    vel = np.average(gvel[r < 10], axis=0, weights=gmass)
+    vel = np.average(gvel[gr < 10], axis=0, weights=gmass)
     Rvir = halo.properties['Rvir']/hubble*a
     sphere1 = pynbody.filt.Sphere(f'{round(Rvir,0)} kpc')
     sphere2 = pynbody.filt.Sphere(f'{round(1.5*Rvir,0)} kpc')
