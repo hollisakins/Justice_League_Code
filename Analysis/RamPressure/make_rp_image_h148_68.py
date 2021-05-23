@@ -96,6 +96,7 @@ for i, filepath in enumerate(filepaths):
         h1s = np.append(h1s, h1)
 
 print(fs)
+print(hs)
         
 i = 1
 for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
@@ -144,26 +145,16 @@ for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
     trans = vec_to_xform(vel)
     tx = pynbody.transformation.transform(tx, trans)
     
-    rvir = halo.properties['Rvir']/hubble*a
-    radius = 0.5*rvir
-    height = 0.75 * radius
-    center = (0, rvir + height/2, 0)
-    wind_filt = pynbody.filt.Disc(radius, height, cen=center)
     
-    
-    smin, smax = -100, 100
+    smin, smax = -40, 40
     gas_vmin, gas_vmax = 6e2, 3e5
     
     print('\t Making gas image')    
-#     im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str(2*(smax-smin)))], width='%s kpc' % str(smax-smin),
-#                                          cmap='viridis', vmin=gas_vmin, vmax=gas_vmax,
-#                                          vector_color='cyan', vector_resolution = 15, av_z='rho', ret_im=True, denoise=False,
-#                                          approximate_fast=False, subplot=iax, show_cbar=False, quiverkey=False)
-    
-    im = pynbody.plot.sph.velocity_image(s[wind_filt].g, width='%s kpc' % str(smax-smin),
+    im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str(2*(smax-smin)))], width='%s kpc' % str(smax-smin),
                                          cmap='viridis', vmin=gas_vmin, vmax=gas_vmax,
                                          vector_color='cyan', vector_resolution = 15, av_z='rho', ret_im=True, denoise=False,
                                          approximate_fast=False, subplot=iax, show_cbar=False, quiverkey=False)
+
 
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
     size = 20
