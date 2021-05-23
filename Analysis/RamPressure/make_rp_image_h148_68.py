@@ -107,9 +107,8 @@ for iax,t,y,f,hid in zip(img_axes,ts,ys,fs,hs):
     Rvir = halo.properties['Rvir']/hubble*a
     sphere1 = pynbody.filt.Sphere(f'{round(Rvir,0)} kpc')
     sphere2 = pynbody.filt.Sphere(f'{round(1.5*Rvir,0)} kpc')
-    svel = s.g['vel']
-    smass = s.g['mass']
-    vel_CGM = np.average(svel[sphere2 & ~sphere1], axis=0, weights=smass[sphere2 & ~sphere1])
+    ssub = s.g[sphere2 & ~sphere1]
+    vel_CGM = np.average(ssub['vel'], axis=0, weights=ssub['mass'])
     vel -= vel_CGM
     
     print('\t Transforming snapshot')
