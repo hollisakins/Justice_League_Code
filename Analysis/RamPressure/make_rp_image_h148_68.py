@@ -2,7 +2,7 @@
 from analysis import *
 
 sim = 'h148'
-haloid = '68'
+haloid = 68
 
 def vec_to_xform(vec):
     vec_in = np.asarray(vec)
@@ -63,7 +63,7 @@ ys = np.array([y0,y1,y2,y3])
 
 for i, filepath in enumerate(filepaths):
     s = pynbody.load(filepath)
-    h = haloids[h]
+    h = haloids[i]
     t = s.properties['time'].in_units('Gyr')
     if any((t - ts) < 0.05):
         fs = np.append(fs, filepath)
