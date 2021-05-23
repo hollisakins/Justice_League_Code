@@ -27,7 +27,7 @@ img3 = plt.subplot(gs[0,3])
 img_axes = [img0,img1,img2,img3]
 
 print('Plotting ram pressure')
-data = data_all[data_all.key == 'h148_68']
+data = read_ram_pressure('h148', 68)
 
 x = np.array(data.t,dtype=float)
 y = np.array(data.Pram,dtype=float)/np.array(data.Prest,dtype=float)
