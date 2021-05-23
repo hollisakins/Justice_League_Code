@@ -131,7 +131,20 @@ for iax,t,y,f,hid in zip(img_axes,ts,ys,fs,hs):
                               bbox_transform=iax.transAxes, color='k', frameon=False)
         iax.add_artist(bar)
 
+ax.set_xlim(6.2, 14)
+ax.set_ylim(2e-4, 2e2)
 
+ax.fill_between([6.2, t0, 8.08], [2e2, y0, 2e2], [2e2]*3, fc='0.95', ec='0.87')
+ax.scatter([t0], [y0], fc='0.95', ec='0.87')
+
+ax.fill_between([8.18, t1, 10.05], [2e2, y1, 2e2], [2e2]*3, fc='0.95', ec='0.9')
+ax.scatter([t1], [y1], fc='0.95', ec='0.87')
+
+ax.fill_between([10.15, t2, 12.03], [2e2, y2, 2e2], [2e2]*3, fc='0.95', ec='0.9')
+ax.scatter([t2], [y2], fc='0.95', ec='0.87')
+
+ax.fill_between([12.13, t3, 14], [2e2, y3, 2e2], [2e2]*3, fc='0.95', ec='0.9')
+ax.scatter([t3], [y3], fc='0.95', ec='0.87')
         
 fig.savefig('plots/ram_pressure_image.pdf',dpi=300)
 plt.close()
