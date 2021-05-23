@@ -1,8 +1,8 @@
 # This code generates a figure showing the motion of a galaxy through the CGM alongside its ram pressure ratio over time
 from analysis import *
 
-sim = 'h229'
-haloid = 22
+sim = 'h148'
+haloid = 68
 
 def vec_to_xform(vec):
     vec_in = np.asarray(vec)
@@ -44,40 +44,34 @@ ax.set_xlabel('Time [Gyr]')
 ax.set_ylabel(r'$\mathcal{P} \equiv P_{\rm ram}/P_{\rm rest}$')
 
 for i in img_axes:
-    i.tick_params(labelleft=False, labelbottom=False)
-    
-img0.tick_params(left=True, labelleft=True)
-img0.set_ylabel(r'$y$ [kpc]')
+    i.tick_params(left=False, right=False, bottom=False, top=False, labelleft=False, labelbottom=False)
 
-    
-t0 = 4.534719
-t1 = 7.120602
-t2 = 8.608831
-t3 = 13.262072
+t0 = 7.767072
+t1 = 9.060013
+t2 = 12.076876
+t3 = 13.800797
 
 y0 = y[np.argmin(np.abs(x-t0))]
 y1 = y[np.argmin(np.abs(x-t1))]
 y2 = y[np.argmin(np.abs(x-t2))]
 y3 = y[np.argmin(np.abs(x-t3))]
 
-ax.set_xlim(3, 13.5)
+ax.set_xlim(6.2, 14)
 ax.set_ylim(2e-4, 2e2)
 
-
-ax.fill_between([3, t0, 5.5], [2e2, y0, 2e2], [2e2]*3, fc='0.95', ec='0.87')
+ax.fill_between([6.2, t0, 8.08], [2e2, y0, 2e2], [2e2]*3, fc='0.95', ec='0.87')
 ax.scatter([t0], [y0], fc='0.95', ec='0.87')
 
-ax.fill_between([5.65, t1, 8.15], [2e2, y1, 2e2], [2e2]*3, fc='0.95', ec='0.9')
+ax.fill_between([8.18, t1, 10.05], [2e2, y1, 2e2], [2e2]*3, fc='0.95', ec='0.9')
 ax.scatter([t1], [y1], fc='0.95', ec='0.87')
 
-ax.fill_between([8.3, t2, 10.8], [2e2, y2, 2e2], [2e2]*3, fc='0.95', ec='0.9')
+ax.fill_between([10.15, t2, 12.03], [2e2, y2, 2e2], [2e2]*3, fc='0.95', ec='0.9')
 ax.scatter([t2], [y2], fc='0.95', ec='0.87')
 
-ax.fill_between([11, t3, 13.5], [2e2, y3, 2e2], [2e2]*3, fc='0.95', ec='0.9')
+ax.fill_between([12.13, t3, 14], [2e2, y3, 2e2], [2e2]*3, fc='0.95', ec='0.9')
 ax.scatter([t3], [y3], fc='0.95', ec='0.87')
 
 ax.xaxis.set_minor_locator(mpl.ticker.MultipleLocator(0.5))
-
 
 print('Getting filepaths for four snapshots...')
 filepaths, haloids, h1ids = get_stored_filepaths_haloids(sim,haloid)
@@ -103,7 +97,6 @@ for i, filepath in enumerate(filepaths):
 
 i = 1
 for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
-
     print(f'Loading snap {i}')
     i += 1
     
@@ -149,13 +142,13 @@ for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
     trans = vec_to_xform(vel)
     tx = pynbody.transformation.transform(tx, trans)
     
-    smin, smax = -30, 30
-    gas_vmin, gas_vmax = 1e4, 1e6
+    smin, smax = -100, 100
+    gas_vmin, gas_vmax = 6e2, 3e5
     
     print('\t Making gas image')    
-    im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str((smax-smin)))], width='%s kpc' % str(smax-smin),
+    im = pynbody.plot.sph.velocity_image(s.g[pynbody.filt.Sphere('%s kpc' % str(2*(smax-smin)))], width='%s kpc' % str(smax-smin),
                                          cmap='viridis', vmin=gas_vmin, vmax=gas_vmax,
-                                         vector_color='cyan', vector_resolution = 15, ret_im=True, denoise=False,
+                                         vector_color='cyan', vector_resolution = 15, av_z='rho', ret_im=True, denoise=False,
                                          approximate_fast=False, subplot=iax, show_cbar=False, quiverkey=False)
 
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
@@ -164,6 +157,7 @@ for iax,t,y,f,hid,h1id in zip(img_axes,ts,ys,fs,hs,h1s):
         bar = AnchoredSizeBar(iax.transData, size, str(size)+' kpc', loc='lower right', bbox_to_anchor=(1.,1.),
                               bbox_transform=iax.transAxes, color='k', frameon=False)
         iax.add_artist(bar)
+
 
         
 fig.savefig('plots/ram_pressure_image.pdf',dpi=300)
