@@ -24,23 +24,21 @@ mpl.rcParams.update({'figure.dpi': 200,
 
 
 # function to plot a median line over some data
-def plot_median(ax,x,y,logx=False,logy=False,bins=None,std=False,**kwargs):
+def plot_median(ax,x,y,logx=False,logy=False,bins=False,std=False,**kwargs):
     from scipy.stats import binned_statistic
     if logx:
         x = np.log10(x)
-        condx = ~np.isnan(x) & ~np.isinf(x)
-    else:
-        condx = x < 2.5
+        
     if logy:
         y = np.log10(y)
-        condy = ~np.isnan(y) & ~np.isinf(y)
-    else:
-        condy = y > 0 
         
+    
+    condx = ~np.isnan(x) & ~np.isinf(x)
+    condy = ~np.isnan(y) & ~np.isinf(y)
     cond = condx & condy
     x, y = x[cond], y[cond]
         
-    if bins==None:
+    if type(bins)==bool:
         bins = np.linspace(np.min(x), np.max(x), 10)
     if type(bins)==int:
         bins = np.linspace(np.min(x), np.max(x), bins)

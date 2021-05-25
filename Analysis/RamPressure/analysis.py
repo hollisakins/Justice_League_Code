@@ -284,11 +284,15 @@ def read_all_ejected_expelled():
     return ejected, cooled, expelled, accreted
 
 def read_ram_pressure(sim, haloid):
-    timescales = read_timescales()
+    '''Function to read in the ram pressure dataset, merge it with particle and flow information, and return a dataset containing 
+    rates of gas flow in additiont to ram pressure information.'''
+    
+    # Load in ram pressure data
     path = '../../Data/ram_pressure.hdf5'
     key = f'{sim}_{haloid}'
-
     data = pd.read_hdf(path, key=key)
+    
+    # convert data to numpy arrays (i.e. remove pynbody unit information) and calculate ratio
     data['Pram_adv'] = np.array(data.Pram_adv,dtype=float)
     data['Pram'] = np.array(data.Pram,dtype=float)
     data['Prest'] = np.array(data.Prest,dtype=float)
@@ -297,6 +301,7 @@ def read_ram_pressure(sim, haloid):
     dt = np.append(dt[0],dt)
     data['dt'] = dt
     
+    # Load timescales information to add quenching time and quenching timescale (tau)
     timescales = read_timescales()
     ts = timescales[(timescales.sim==sim)&(timescales.haloid==haloid)]
     data['tau'] = ts.tinfall.iloc[0] - ts.tquench.iloc[0]    
@@ -305,26 +310,36 @@ def read_ram_pressure(sim, haloid):
     # load ejected/expelled data
     ejected,cooled,expelled,accreted = read_ejected_expelled(sim, haloid)
 
+    # Mgas_div is the gas mass we divide by when plotting rates. this is the gas mass 1 snapshot ago
     Mgas_div = np.array(data.M_gas,dtype=float)
     Mgas_div = np.append(Mgas_div[0], Mgas_div[:-1])
     data['Mgas_div'] = Mgas_div
     
+    # load in particle data
     particles = read_tracked_particles(sim,haloid)
+    # m_disk = 0 if particle is not in the disk, = particle mass if it is. this allows us to compute total mass in the disk
     particles['m_disk'] = np.array(particles.mass,dtype=float)*np.array(particles.sat_disk,dtype=int)
+    particles['m_SNeaff'] = np.array(particles.mass,dtype=float)*np.array(particles.coolontime > particles.time, dtype=int)
     
+    # group the particles data by unique times and sum the mass of particles that are SNe affected, to get total mass
+    data = pd.merge_asof(data, particles.groupby(['time']).m_SNeaff.sum().reset_index(), left_on='t', right_on='time')
+    data = data.rename(columns={'m_SNeaff':'M_SNeaff'})
+    
+    # group the particles data by unique times and sum the mass of particles that are in the disk, to get total mass
     data = pd.merge_asof(data, particles.groupby(['time']).m_disk.sum().reset_index(), left_on='t', right_on='time')
     data = data.rename(columns={'m_disk':'M_disk'})
     
+    # analagous to Mgas_div above
     Mdisk_div = np.array(data.M_disk,dtype=float)
     Mdisk_div = np.append(Mdisk_div[0], Mdisk_div[:-1])
     data['Mdisk_div'] = Mdisk_div
     
-    # first, ejected gas
+    # get rates of heated (ejected) gas
     data = pd.merge_asof(data, ejected.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
-    data = data.rename(columns={'mass':'M_ejected'})
-    data['Mdot_ejected'] = data.M_ejected / data.dt
-    data['Mdot_ejected_by_Mgas'] = data.Mdot_ejected / Mgas_div
-    data['Mdot_ejected_by_Mdisk'] = data.Mdot_ejected / Mdisk_div
+    data = data.rename(columns={'mass':'M_ejected'}) # mass ejected in that snapshot
+    data['Mdot_ejected'] = data.M_ejected / data.dt # rate of mass ejection 
+    data['Mdot_ejected_by_Mgas'] = data.Mdot_ejected / Mgas_div # rate of ejection divided by M_gas
+    data['Mdot_ejected_by_Mdisk'] = data.Mdot_ejected / Mdisk_div # rate of ejection divided by M_disk
 
     # next, cooled gas
     data = pd.merge_asof(data, cooled.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
@@ -333,7 +348,7 @@ def read_ram_pressure(sim, haloid):
     data['Mdot_cooled_by_Mgas'] = data.Mdot_cooled / Mgas_div
     data['Mdot_cooled_by_Mdisk'] = data.Mdot_cooled / Mdisk_div
 
-    # next, expelled gas
+    # next, expelled gas (including gas expelled directly from the disk and gas expelled within a certain exit angle)
     expelled_disk = expelled[expelled.state1 == 'sat_disk']
     expelled_th30 = expelled[expelled.angle <= 30]
     
@@ -342,12 +357,14 @@ def read_ram_pressure(sim, haloid):
     data['Mdot_expelled'] = data.M_expelled / data.dt
     data['Mdot_expelled_by_Mgas'] = data.Mdot_expelled / Mgas_div
 
+    # gas expelled directly from the disk
     data = pd.merge_asof(data, expelled_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
     data = data.rename(columns={'mass':'M_expelled_disk'})
     data['Mdot_expelled_disk'] = data.M_expelled_disk / data.dt
     data['Mdot_expelled_disk_by_Mgas'] = data.Mdot_expelled_disk / Mgas_div
     data['Mdot_expelled_disk_by_Mdisk'] = data.Mdot_expelled_disk / Mdisk_div
 
+    # gas expelled within an exit angle of 30 degrees
     data = pd.merge_asof(data, expelled_th30.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time')
     data = data.rename(columns={'mass':'M_expelled_th30'})
     data['Mdot_expelled_th30'] = data.M_expelled_th30 / data.dt
@@ -367,18 +384,19 @@ def read_ram_pressure(sim, haloid):
     data['Mdot_accreted_disk_by_Mgas'] = data.Mdot_accreted_disk / Mgas_div
     data['Mdot_accreted_disk_by_Mdisk'] = data.Mdot_accreted_disk / Mdisk_div
 
-    
+    # overall rate of gas-loss
     dM_gas = np.array(data.M_gas,dtype=float)[1:] - np.array(data.M_gas,dtype=float)[:-1]
     dM_gas = np.append([np.nan],dM_gas)
     data['Mdot_gas'] = dM_gas / np.array(data.dt)
     
-    
+    # rate of gas-loss from the disk
     dM_disk = np.array(data.M_disk,dtype=float)[1:] - np.array(data.M_disk,dtype=float)[:-1]
     dM_disk = np.append([np.nan],dM_disk)
     data['Mdot_disk'] = dM_disk / np.array(data.dt)
     
     data['key'] = key
     
+    # fraction of the inital gas mass still remaining in the satellite
     M_gas_init = np.array(data.M_gas)[np.argmin(data.t)]
     data['f_gas'] = np.array(data.M_gas)/M_gas_init
     
