@@ -13,3 +13,4 @@ F19/data/
 **/.ipynb_checkpoints/
 *.pdf
 *.png
+.DS_Store
