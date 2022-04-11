@@ -254,21 +254,7 @@ if __name__ == '__main__':
 
     # we save the data as an .hdf5 file since this is meant for large datasets, so that should work pretty good
     output = run_tracking(sim, z0haloid, filepaths, haloids, h1ids)
-
-    outfile = '../../Data/tracked_particles.hdf5'
-    key = f'{sim}_{z0haloid}'
-
-    try:
-        output.to_hdf(outfile, key=key)
-    except:
-        from time import sleep
-        sleep(20)
-        try:
-            output.to_hdf(outfile, key=key)
-        except:
-            sleep(20)
-            output.to_hdf(outfile, key=key)
-        
+    output.to_hdf('../../Data/tracked_particles.hdf5',key=f'{sim}_{z0haloid}')
 
 
 
