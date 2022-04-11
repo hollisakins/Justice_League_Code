@@ -6,7 +6,7 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import glob
-
+import tqdm
 # define some constants, which should be accessible by any code that imports base.py or analysis.py
 hubble =  0.6776942783267969 # hubble constant
 age = 13.800797497330507 # age of universe at z=0
@@ -90,13 +90,13 @@ def get_stored_filepaths_haloids(sim,z0haloid):
     except KeyError:
         print('z0haloid not found, perhaps this is a halo that has no stars at z=0, and therefore isnt tracked')
         raise
-        
+
+
     if sim=='h148' and z0haloid==282:
         haloids = np.append(haloids, np.array([np.nan, 79, 43, np.nan, 42, 44, np.nan, np.nan, np.nan, np.nan, 73, np.nan, 77, np.nan, 69, 42, 53, 85, np.nan]))
         filepaths = filepaths[~np.isnan(haloids)]
         h1ids = h1ids[~np.isnan(haloids)]
         haloids = haloids[~np.isnan(haloids)]
-        
     return filepaths,haloids,h1ids
     
 # timesteps data
@@ -151,7 +151,7 @@ def get_snap_start(sim,z0haloid):
     dist = np.array([])
     time = np.array([])
 
-    for f, haloid, h1id in zip(filepaths, haloids, h1ids):
+    for f, haloid, h1id in tqdm.tqdm(zip(filepaths, haloids, h1ids), total=len(filepaths)):
         s = pynbody.load(f)
         h = s.halos()
         halo = h[haloid]
@@ -164,9 +164,9 @@ def get_snap_start(sim,z0haloid):
         dist = np.append(dist, d)
         t = float(s.properties['time'].in_units('Gyr'))
         time = np.append(time, t)
-        print(t,d)
+        #print(t,d)
 
-    time[dist > 2] = 0
+    time[dist < 2] = 0
     snap_start = np.argmax(time)
 
     print(f'\t {sim}-{z0haloid}: Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!

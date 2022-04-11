@@ -154,7 +154,7 @@ def calc_angles_tidal(d):
     return d
 
 
-def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
+def calc_ejected_expelled(sim, haloid, check_outflow_time=True, save=True, verbose=True):
     import tqdm
     data = read_tracked_particles(sim, haloid, verbose=verbose)
 
@@ -182,8 +182,12 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
                 i += 1
                 
                 i_end = np.argmin(np.abs(t2+1-time)) # find the index at which the time is closest to 1 Gyr after i
+                if check_outflow_time:
+                    check = all(outside_sat[i:i_end])
+                else:
+                    check = outside_sat[i]
                     
-                if in_sat[i-1] and all(outside_sat[i:i_end]):
+                if in_sat[i-1] and check:
                     out = dat[time==t2].copy()
                     if sat_halo[i-1]:
                         out['state1'] = 'sat_halo'
@@ -207,12 +211,16 @@ def calc_ejected_expelled(sim, haloid, save=True, verbose=True):
     
     if save:
         key = f'{sim}_{str(int(haloid))}'
-
-        filepath = '../../Data/expelled_particles.hdf5'
+        if check_outflow_time:
+            filepath = '../../Data/expelled_particles.hdf5'
+        else:
+            filepath = '../../Data/expelled_particles_no1Gyr.hdf5'
         print(f'Saving {key} expelled particle dataset to {filepath}')
         expelled.to_hdf(filepath, key=key)
-                
-        filepath = '../../Data/accreted_particles.hdf5'
+        if check_outflow_time:        
+            filepath = '../../Data/accreted_particles.hdf5'
+        else:
+            filepath = '../../Data/accreted_particles_no1Gyr.hdf5'
         print(f'Saving {key} accreted particle dataset to {filepath}')
         accreted.to_hdf(filepath, key=key)
         
@@ -226,20 +234,20 @@ def read_ejected_expelled(sim, haloid, suffix=''):
     key = f'{sim}_{str(int(haloid))}'
     #ejected = pd.read_hdf('../../Data/ejected_particles.hdf5', key=key)
     #cooled = pd.read_hdf('../../Data/cooled_particles.hdf5', key=key)
-    expelled = pd.read_hdf(f'../../Data/expelled_particles{suffix}.hdf5', key=key)
-    accreted = pd.read_hdf(f'../../Data/accreted_particles.hdf5', key=key)
+    expelled = pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)
+    accreted = pd.read_hdf('../../Data/accreted_particles.hdf5', key=key)
     print(f'Returning (expelled, accreted) for {sim}-{haloid}...')
     return expelled, accreted
         
     
-def read_all_ejected_expelled(suffix=''):
+def read_all_ejected_expelled():
 #     ejected = pd.DataFrame()
 #     cooled = pd.DataFrame()
     expelled = pd.DataFrame()
     accreted = pd.DataFrame()
     keys = get_keys()
     for key in keys:
-        expelled1 = pd.read_hdf(f'../../Data/expelled_particles{suffix}.hdf5', key=key)
+        expelled1 = pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)
         expelled1['key'] = key
         expelled = pd.concat([expelled, expelled1])
         accreted1 = pd.read_hdf('../../Data/accreted_particles.hdf5', key=key)
@@ -273,13 +281,13 @@ def read_ram_pressure(sim, haloid, suffix=''):
     data['dt'] = dt
     
     # Load timescales information to add quenching time and quenching timescale (tau)
-    timescales = read_timescales()
-    ts = timescales[(timescales.sim==sim)&(timescales.haloid==haloid)]
-    data['tau'] = ts.tinfall.iloc[0] - ts.tquench.iloc[0]    
-    data['tquench'] = age - ts.tquench.iloc[0]   
+    #timescales = read_timescales()
+    #ts = timescales[(timescales.sim==sim)&(timescales.haloid==haloid)]
+    #data['tau'] = ts.tinfall.iloc[0] - ts.tquench.iloc[0]    
+    #data['tquench'] = age - ts.tquench.iloc[0]   
 
     # load ejected/expelled data
-    expelled,accreted = read_ejected_expelled(sim, haloid, suffix=suffix)
+    expelled,accreted = read_ejected_expelled(sim, haloid)
 
     # Mgas_div is the gas mass we divide by when plotting rates. this is the gas mass 1 snapshot ago
     Mgas_div = np.array(data.M_gas,dtype=float)
