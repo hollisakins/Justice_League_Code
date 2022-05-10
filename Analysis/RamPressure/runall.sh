@@ -30,19 +30,19 @@ date
 # python particletracking.py h148 282 & # 19
 # wait
 
-python particletracking.py h148 2 > logs/h148_2.log &
-python particletracking.py h242 30 > logs/h242_30.log &
-python particletracking.py h148 6 > logs/h148_6.log &
-python particletracking.py h329 7 > logs/h329_7.log &
+python particletracking.py h148 2 &
+python particletracking.py h242 30 &
+python particletracking.py h148 6 &
+python particletracking.py h329 7 &
 wait 
-python particletracking.py h148 3 > logs/h148_3.log &
-python particletracking.py h148 7 > logs/h148_7.log &
-python particletracking.py h242 401 > logs/h242_401.log &
-python particletracking.py h242 8 > logs/h242_8.log &
+python particletracking.py h148 3 &
+python particletracking.py h148 7 &
+python particletracking.py h242 401 &
+python particletracking.py h242 8 &
 wait 
-python particletracking.py h148 4 > logs/h148_4.log &
-python particletracking.py h148 10 > logs/h148_10.log &
-python particletracking.py h242 10 > logs/h242_10.log &
+python particletracking.py h148 4 &
+python particletracking.py h148 10 &
+python particletracking.py h242 10 &
 wait
 
 
