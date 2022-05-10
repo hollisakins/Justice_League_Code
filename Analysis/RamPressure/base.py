@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import glob
 import tqdm
+import sys
+import logging 
+import traceback 
+
 # define some constants, which should be accessible by any code that imports base.py or analysis.py
 hubble =  0.6776942783267969 # hubble constant
 age = 13.800797497330507 # age of universe at z=0
@@ -33,6 +37,15 @@ pynbody.config['halo-class-priority'] =  [pynbody.halo.ahf.AHFCatalogue,
                                           pynbody.halo.rockstar.RockstarCatalogue,
                                           pynbody.halo.subfind.SubfindCatalogue,
                                           pynbody.halo.hop.HOPCatalogue]
+
+
+
+# function to log uncaught exceptions
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 
 # function to plot a median line over some data
@@ -102,7 +115,6 @@ def get_stored_filepaths_haloids(sim,z0haloid):
         print('z0haloid not found, perhaps this is a halo that has no stars at z=0, and therefore isnt tracked')
         raise
 
-
     if sim=='h148' and z0haloid==282:
         haloids = np.append(haloids, np.array([np.nan, 79, 43, np.nan, 42, 44, np.nan, np.nan, np.nan, np.nan, 73, np.nan, 77, np.nan, 69, 42, 53, 85, np.nan]))
         filepaths = filepaths[~np.isnan(haloids)]
@@ -156,7 +168,6 @@ def read_infall_properties():
 
 # determines the snapshot at which to start tracking (first snapshot where satellite is within 2 Rvir of host)
 def get_snap_start(sim,z0haloid):
-    print(f'\t {sim}-{z0haloid}: Getting starting snapshot (dist = 2 Rvir)')
     filepaths,haloids,h1ids = get_stored_filepaths_haloids(sim,z0haloid)
 
     dist = np.array([])
@@ -180,7 +191,6 @@ def get_snap_start(sim,z0haloid):
     time[dist < 2] = 0
     snap_start = np.argmax(time)
 
-    print(f'\t {sim}-{z0haloid}: Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}') # go down from there!
     return snap_start
 
 

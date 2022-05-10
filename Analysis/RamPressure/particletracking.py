@@ -1,7 +1,7 @@
 from base import *
-import sys
-import tqdm
 import os
+
+sys.excepthook = handle_exception
 
 hubble =  0.6776942783267969
 
@@ -9,14 +9,15 @@ def get_iords(sim, z0haloid, filepaths, haloids):
     # '''Get the particle indices (iords) for all gas particles that have been in the halo since snap_start.''''
     path = f'../../Data/iords/{sim}_{z0haloid}.pickle'
     if os.path.exists(path):
-        print(f'Found iords file at {path}, loading these...')
+        logger.debug(f'Found iords file at {path}, loading these')
+        logger.warning(f'If you have recently changed something, these iords might not be correct')
         with open(path,'rb') as infile:
             iords = pickle.load(infile)
     
     else:
-        print(f'No iords file, computing iords to track (saving to {path})...')
+        logger.debug(f'Could not find iords file, computing iords to track')
         iords = np.array([])
-        for f,haloid in tqdm.tqdm(zip(filepaths,haloids),total=len(filepaths)):
+        for f,haloid in zip(filepaths,haloids):
             s = pynbody.load(f)
             s.physical_units()
             h = s.halos()
@@ -24,6 +25,7 @@ def get_iords(sim, z0haloid, filepaths, haloids):
             iord = np.array(halo.gas['iord'], dtype=int)
             iords = np.union1d(iords, iord)
         
+        logger.debug(f'Saving iords file to {path}')
         with open(path,'wb') as outfile:
             pickle.dump(iords,outfile)
 
@@ -34,24 +36,22 @@ def run_tracking(sim, z0haloid, filepaths,haloids,h1ids):
     iords = get_iords(sim, z0haloid, filepaths, haloids)
     
     use_iords = True
-    verbose = False
     output = pd.DataFrame()
-    print('Starting tracking/analysis...')
-    for f,haloid,h1id in tqdm.tqdm(zip(filepaths,haloids,h1ids),total=len(filepaths)):
+    logger.debug('Starting tracking')
+    for f,haloid,h1id in zip(filepaths,haloids,h1ids):
         s = pynbody.load(f)
         s.physical_units()
         h = s.halos()
         halo = h[haloid]
         h1 = h[h1id]
         snapnum = f[-4:]
+        logger.debug(f'* Snapshot {snapnum}')
 
         if use_iords:
-            if verbose: print(f'First snapshot ({snapnum}), getting gas particles from iords')
             iord = np.array(s.gas['iord'],dtype=float)
             gas_particles = s.gas[np.isin(iord,iords)]
             use_iords = False
         else:
-            if verbose: print(f'Linking snapshots {snapnum_prev} and {snapnum} with bridge object...')
             b = pynbody.bridge.OrderBridge(s_prev,s,allow_family_change=True)
             gas_particles = b(gas_particles_prev)
 
@@ -80,7 +80,6 @@ def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
     output['temp'] = np.array(gas_particles.g['temp'].in_units('K'), dtype=float)
     output['mass'] = np.array(gas_particles.g['mass'].in_units('Msol'), dtype=float)
     output['coolontime'] = np.array(gas_particles.g['coolontime'].in_units('Gyr'),dtype=float)
-    
     
     # calculate properties centered on the satellite
     pynbody.analysis.halo.center(halo)
@@ -170,10 +169,8 @@ def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
             r_half = np.nan
 
     output['sat_r_half'] = r_half
-    output['sat_r_gas'] = r_gas # store these two radii, in post-processing define r_gal as max(r_gas,r_half) but also ensure r_gal doesn't decrease
-    
-    
-    
+    output['sat_r_gas'] = r_gas 
+
     # defining r_g of host
     try:
         pynbody.analysis.angmom.faceon(h1)
@@ -205,8 +202,6 @@ def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
     output['host_r_half'] = r_half
     output['host_r_gas'] = r_gas
     
-
-    
     # we say the particle is in the satellite if its particle ID is one of those AHF identifies as part of the halo
     in_sat = np.isin(output.pid, halo.g['iord'])
     in_host = np.isin(output.pid, h1.g['iord'])
@@ -230,14 +225,31 @@ def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
     return output
 
 
+
+
 if __name__ == '__main__':
     sim = str(sys.argv[1])
     z0haloid = int(sys.argv[2])
-    
-    snap_start = get_snap_start(sim,z0haloid)
+
+    if not os.path.exists('./logs/'):
+        os.mkdir('./logs/')
+    logging.basicConfig(filename=f'./logs/{sim}_{z0haloid}.log', 
+                        format='%(asctime)s :: %(levelname)-8s :: %(message)s', 
+                        datefmt='%m/%d/%Y %I:%M:%S %p',
+                        level=logging.DEBUG)
+    logger = logging.getLogger('mylogger')
+
+    logger.debug(f'Beginning particle tracking for {sim}-{z0haloid}')
+    # in order: debug, info, warning, error
+
+    logger.debug('Getting stored filepaths and haloids')
     filepaths, haloids, h1ids = get_stored_filepaths_haloids(sim,z0haloid)
     # filepaths starts with z=0 and goes to z=15 or so
 
+    logger.debug('Getting starting snapshot (may take a while)')
+    snap_start = get_snap_start(sim,z0haloid)
+    logger.debug(f'Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}')
+    
     # fix the case where the satellite doesn't have merger info prior to 
     if len(haloids) < snap_start:
         snap_start = len(haloids)
@@ -254,7 +266,10 @@ if __name__ == '__main__':
 
     # we save the data as an .hdf5 file since this is meant for large datasets, so that should work pretty good
     output = run_tracking(sim, z0haloid, filepaths, haloids, h1ids)
-    output.to_hdf('../../Data/tracked_particles.hdf5',key=f'{sim}_{z0haloid}')
+
+    savepath = '../../Data/tracked_particles.hdf5'
+    logger.debug(f'Saving output to {savepath}')
+    output.to_hdf(savepath,key=f'{sim}_{z0haloid}')
 
 
 
