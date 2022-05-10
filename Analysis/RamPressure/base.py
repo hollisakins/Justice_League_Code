@@ -27,8 +27,8 @@ mpl.rcParams.update({'figure.dpi': 200,
 # set the config to prioritize the AHF catalog
 # otherwise it prioritizes AmgiaGrpCatalogue and you lose a lot of important info
 pynbody.config['halo-class-priority'] =  [pynbody.halo.ahf.AHFCatalogue,
-                                          pynbody.halo.GrpCatalogue,
                                           pynbody.halo.AmigaGrpCatalogue,
+                                          pynbody.halo.GrpCatalogue,
                                           pynbody.halo.legacy.RockstarIntermediateCatalogue,
                                           pynbody.halo.rockstar.RockstarCatalogue,
                                           pynbody.halo.subfind.SubfindCatalogue,
