@@ -24,6 +24,17 @@ mpl.rcParams.update({'figure.dpi': 200,
                      'ytick.right': True})
 
 
+# set the config to prioritize the AHF catalog
+# otherwise it prioritizes AmgiaGrpCatalogue and you lose a lot of important info
+pynbody.config['halo-class-priority'] =  [pynbody.halo.ahf.AHFCatalogue,
+                                          pynbody.halo.GrpCatalogue,
+                                          pynbody.halo.AmigaGrpCatalogue,
+                                          pynbody.halo.legacy.RockstarIntermediateCatalogue,
+                                          pynbody.halo.rockstar.RockstarCatalogue,
+                                          pynbody.halo.subfind.SubfindCatalogue,
+                                          pynbody.halo.hop.HOPCatalogue]
+
+
 # function to plot a median line over some data
 def plot_median(ax,x,y,logx=False,logy=False,bins=False,std=False,**kwargs):
     from scipy.stats import binned_statistic
