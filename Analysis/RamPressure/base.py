@@ -6,7 +6,6 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import glob
-import tqdm
 import sys
 import logging 
 import traceback 
@@ -173,7 +172,7 @@ def get_snap_start(sim,z0haloid):
     dist = np.array([])
     time = np.array([])
 
-    for f, haloid, h1id in tqdm.tqdm(zip(filepaths, haloids, h1ids), total=len(filepaths)):
+    for f, haloid, h1id in zip(filepaths, haloids, h1ids):
         s = pynbody.load(f)
         h = s.halos()
         halo = h[haloid]
