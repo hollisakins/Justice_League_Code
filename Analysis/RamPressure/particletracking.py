@@ -1,6 +1,15 @@
 from base import *
 import os
 
+# function to log uncaught exceptions
+def handle_exception(exc_type, exc_value, exc_traceback):
+    global logger
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+
 sys.excepthook = handle_exception
 
 hubble =  0.6776942783267969
@@ -225,32 +234,6 @@ def analysis(s,halo,h1,gas_particles,h,haloid,h1id):
     return output
 
 
-# determines the snapshot at which to start tracking (first snapshot where satellite is within 2 Rvir of host)
-def get_snap_start(sim,z0haloid):
-    filepaths,haloids,h1ids = get_stored_filepaths_haloids(sim,z0haloid)
-
-    dist = np.array([])
-    time = np.array([])
-
-    for f, haloid, h1id in zip(filepaths, haloids, h1ids):
-        s = pynbody.load(f)
-        h = s.halos()
-        halo = h[haloid]
-        h1 = h[h1id]
-        
-        x = halo.properties['Xc'] - h1.properties['Xc']
-        y = halo.properties['Yc'] - h1.properties['Yc']
-        z = halo.properties['Zc'] - h1.properties['Zc']
-        d = np.sqrt(np.sum(np.power([x,y,z],2))) / h1.properties['Rvir']
-        dist = np.append(dist, d)
-        t = float(s.properties['time'].in_units('Gyr'))
-        time = np.append(time, t)
-        #print(t,d)
-
-    time[dist < 2] = 0
-    snap_start = np.argmax(time)
-
-    return snap_start
 
 
 if __name__ == '__main__':
