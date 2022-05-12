@@ -2,7 +2,7 @@
 from analysis import *
 
 sim = 'h148'
-haloid = 65
+haloid = 55
 
 def vec_to_xform(vec):
     vec_in = np.asarray(vec)
