@@ -2,7 +2,7 @@
 from analysis import *
 
 sim = 'h148'
-haloid = 68
+haloid = 65
 
 def vec_to_xform(vec):
     vec_in = np.asarray(vec)
@@ -42,6 +42,37 @@ ax.legend(loc='upper left', frameon=False)
 ax.semilogy()
 ax.set_xlabel('Time [Gyr]')
 ax.set_ylabel(r'$\mathcal{P} \equiv P_{\rm ram}/P_{\rm rest}$')
+
+
+d1 = read_tracked_particles(sim, haloid)
+d1 = d1.groupby(['time']).mean().reset_index()
+t = np.array(d1.time)
+x = np.array(d1.sat_Xc-d1.host_Xc)
+y = np.array(d1.sat_Yc-d1.host_Yc)
+z = np.array(d1.sat_Zc-d1.host_Zc)
+r = np.array(d1.hostRvir)
+h1dist = np.sqrt(x**2+y**2+z**2)/r
+
+newt = np.linspace(np.min(t), np.max(t), 1000)
+from scipy.interpolate import UnivariateSpline
+sx = UnivariateSpline(t, x)
+sy = UnivariateSpline(t, y)
+sz = UnivariateSpline(t, z)
+sr = UnivariateSpline(t, r)
+newx = sx(newt)
+newy = sy(newt)
+newz = sz(newt)
+newr = sr(newt)
+newh1dist = np.sqrt(newx**2+newy**2+newz**2)/newr
+
+ax1 = ax.twinx()
+ax1.plot(newt, newh1dist, color='royalblue')
+ax1.semilogy()
+ax1.set_ylabel('host distance [$R_{\rm vir}$]', color='royalblue')
+
+
+
+
 
 for i in [img0,img1,img2,img3]:
     i.tick_params(labelleft=False, labelbottom=False)
