@@ -248,6 +248,7 @@ if __name__ == '__main__':
                         level=logging.DEBUG)
     logger = logging.getLogger('mylogger')
 
+    logger.debug(f'--------------------------------------------------------------')
     logger.debug(f'Beginning particle tracking for {sim}-{z0haloid}')
     # in order: debug, info, warning, error
 
