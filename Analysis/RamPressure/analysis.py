@@ -281,10 +281,11 @@ def read_ram_pressure(sim, haloid, suffix=''):
     data['dt'] = dt
     
     # Load timescales information to add quenching time and quenching timescale (tau)
-    #timescales = read_timescales()
-    #ts = timescales[(timescales.sim==sim)&(timescales.haloid==haloid)]
-    #data['tau'] = ts.tinfall.iloc[0] - ts.tquench.iloc[0]    
-    #data['tquench'] = age - ts.tquench.iloc[0]   
+    timescales = read_timescales()
+    ts = timescales[(timescales.sim==sim)&(timescales.haloid==haloid)]
+    data['tau'] = ts.tinfall.iloc[0] - ts.tquench.iloc[0]    
+    data['tquench'] = age - ts.tquench.iloc[0]   
+    data['tinfall'] = age - ts.tinfall.iloc[0]   
 
     # load ejected/expelled data
     expelled,accreted = read_ejected_expelled(sim, haloid)
@@ -293,6 +294,10 @@ def read_ram_pressure(sim, haloid, suffix=''):
     Mgas_div = np.array(data.M_gas,dtype=float)
     Mgas_div = np.append(Mgas_div[0], Mgas_div[:-1])
     data['Mgas_div'] = Mgas_div
+    
+    Mstar_div = np.array(data.M_star,dtype=float)
+    Mstar_div = np.append(Mstar_div[0], Mstar_div[:-1])
+    data['Mstar_div'] = Mstar_div
     
     # load in particle data
     particles = read_tracked_particles(sim,haloid)
@@ -338,7 +343,8 @@ def read_ram_pressure(sim, haloid, suffix=''):
     data = data.rename(columns={'mass':'M_expelled'})
     data['Mdot_expelled'] = data.M_expelled / data.dt
     data['Mdot_expelled_by_Mgas'] = data.Mdot_expelled / Mgas_div
-    
+    data['Mdot_expelled_by_Mstar'] = data.Mdot_expelled / Mstar_div
+
     data = pd.merge_asof(data, expelled.groupby(['time']).apply(lambda x: np.average(x.angle, weights=x.mass)).reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
     data = data.rename(columns={0:'theta_mean'})
 
@@ -389,7 +395,9 @@ def read_ram_pressure(sim, haloid, suffix=''):
     data = data.rename(columns={'mass':'M_accreted'})
     data['Mdot_accreted'] = data.M_accreted / data.dt
     data['Mdot_accreted_by_Mgas'] = data.Mdot_accreted / Mgas_div
+    data['Mdot_accreted_by_Mstar'] = data.Mdot_accreted / Mstar_div
 
+    
     data = pd.merge_asof(data, accreted_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
     data = data.rename(columns={'mass':'M_accreted_disk'})
     data['Mdot_accreted_disk'] = data.M_accreted_disk / data.dt
@@ -418,20 +426,20 @@ def read_ram_pressure(sim, haloid, suffix=''):
     timesteps_target = timesteps_target.sort_values('t')
     timesteps_target = pd.merge_asof(data, timesteps_target, on='t', tolerance=1, direction='nearest')
 
-    FG = np.array([])
-    for tt in timesteps_target.iterrows():
-        tt = tt[1]
-        timesteps_tt = timesteps[np.abs(timesteps.t-tt.t) < 1e-10]
-        dists_sq = (timesteps_tt.x-tt.x)**2 + (timesteps_tt.y-tt.y)**2 + (timesteps_tt.z-tt.z)**2
-        masses = np.array(timesteps_tt.mass)
+#     FG = np.array([])
+#     for tt in timesteps_target.iterrows():
+#         tt = tt[1]
+#         timesteps_tt = timesteps[np.abs(timesteps.t-tt.t) < 1e-10]
+#         dists_sq = (timesteps_tt.x-tt.x)**2 + (timesteps_tt.y-tt.y)**2 + (timesteps_tt.z-tt.z)**2
+#         masses = np.array(timesteps_tt.mass)
 
-        mass_target = masses[np.argmin(dists_sq)]
-        masses = masses[dists_sq > 0]
-        dists_sq = dists_sq[dists_sq > 0]
+#         mass_target = masses[np.argmin(dists_sq)]
+#         masses = masses[dists_sq > 0]
+#         dists_sq = dists_sq[dists_sq > 0]
 
-        FG = np.append(FG, np.array(np.sum((masses/mass_target)/dists_sq),dtype=float))
+#         FG = np.append(FG, np.array(np.sum((masses/mass_target)/dists_sq),dtype=float))
 
-    data['FG'] = FG
+#     data['FG'] = FG
     
     ## calculate sigmadisk
     sat_particles = particles[particles.in_sat]
@@ -452,6 +460,28 @@ def read_ram_pressure(sim, haloid, suffix=''):
 
 
     data = pd.merge_asof(data, df, left_on='t', right_on='time', direction='nearest', tolerance=1)
+    
+    p = particles.groupby(['time'])[['sat_Xc','sat_Yc','sat_Zc','host_Xc','host_Yc','host_Zc','hostRvir']].mean().reset_index()
+    t = np.array(p.time)
+    x = np.array(p.sat_Xc-p.host_Xc)
+    y = np.array(p.sat_Yc-p.host_Yc)
+    z = np.array(p.sat_Zc-p.host_Zc)
+    r = np.array(p.hostRvir)
+    from scipy.interpolate import UnivariateSpline
+    sx = UnivariateSpline(t, x)
+    sy = UnivariateSpline(t, y)
+    sz = UnivariateSpline(t, z)
+    sr = UnivariateSpline(t, r)
+    tnew = np.linspace(np.min(t),np.max(t),300)
+    xnew = sx(tnew)
+    ynew = sy(tnew)
+    znew = sz(tnew)
+    rnew = sr(tnew)
+    d = np.sqrt(x**2+y**2+z**2)/r
+    dnew = np.sqrt(xnew**2+ynew**2+znew**2)/rnew
+    from scipy.signal import argrelextrema
+    t_1peri = np.min(tnew[argrelextrema(dnew, np.less)])
+    data['t_1peri'] = t_1peri
     
     
     
