@@ -181,9 +181,8 @@ def get_snap_start(sim,z0haloid):
         time = np.append(time, t)
         #print(t,d)
 
-    time[dist < 2] = 0
-    snap_start = np.argmax(time)
-
+    time[dist > 2] = 1e5
+    snap_start = np.argmin(time)+1
     return snap_start
 
 
