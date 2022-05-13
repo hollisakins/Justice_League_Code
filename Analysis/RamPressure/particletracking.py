@@ -243,10 +243,10 @@ if __name__ == '__main__':
     if not os.path.exists('./logs/'):
         os.mkdir('./logs/')
     logging.basicConfig(filename=f'./logs/{sim}_{z0haloid}.log', 
-                        format='%(asctime)s :: %(levelname)-8s :: %(message)s', 
+                        format='%(asctime)s :: %(name)s :: %(levelname)-8s :: %(message)s', 
                         datefmt='%m/%d/%Y %I:%M:%S %p',
                         level=logging.DEBUG)
-    logger = logging.getLogger('mylogger')
+    logger = logging.getLogger('PartTracker')
 
     logger.debug(f'--------------------------------------------------------------')
     logger.debug(f'Beginning particle tracking for {sim}-{z0haloid}')
