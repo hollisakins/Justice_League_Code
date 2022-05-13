@@ -1,7 +1,6 @@
 from analysis import *
 from base import *
 import sys
-import tqdm
 import os
 import fsps
 
@@ -19,14 +18,16 @@ def vec_to_xform(vec):
 def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
     output_tot = pd.DataFrame()
     
-    #print('Starting calculations...')
-    for f,haloid,h1id in tqdm.tqdm(zip(filepaths,haloids,h1ids),total=len(filepaths)):
+    
+    for f,haloid,h1id in zip(filepaths,haloids,h1ids):
         # load simulation
         s = pynbody.load(f)
         s.physical_units()
         h = s.halos()
         sat = h[haloid]
         host = h[h1id]
+        snapnum = f[-4:]
+        logger.debug(f'* Snapshot {snapnum}')
         
         # save time t and scale factor a
         t = float(s.properties['time'].in_units('Gyr'))
@@ -42,13 +43,13 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         r_rel = r_sat - r_host
         h1dist = np.linalg.norm(r_rel)
         output['h1dist'] = [h1dist]
-        print(f'\n\t {sim}-{z0haloid}: Distance from host = {h1dist:.2f} kpc')
+        logger.debug(f'Distance from host = {h1dist:.2f} kpc')
         
         v_sat = np.array([sat.properties[k] for k in ['VXc','VYc','VZc']])
         v_host = np.array([host.properties[k] for k in ['VXc','VYc','VZc']])
         v_rel = v_sat - v_host
         v_rel_mag = np.linalg.norm(v_rel)
-        print(f'\t {sim}-{z0haloid}: Relative velocity = {v_rel_mag:.2f} km/s')
+        logger.debug(f'Relative velocity = {v_rel_mag:.2f} km/s')
 
         # nearest neighbor distance (topic of ongoing investigation)
         nDM = len(sat.dm)
@@ -64,7 +65,6 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         
         r_others = np.array([Xcs, Ycs, Zcs]).T
         dists = np.linalg.norm(r_others - r_sat, axis=1)
-        print(f'\t {sim}-{z0haloid}: dNN = {np.min(dists):.1f} kpc')
         output['dNN'] = [np.min(dists)]
         
         # basic galaxy properties
@@ -77,7 +77,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['M_gas'] = [M_gas]
         output['satRvir'] = [rvir]
         output['hostRvir'] = [h1rvir]
-        print(f'\t {sim}-{z0haloid}: Satellite M_gas = {M_gas:.1e} Msun')
+        logger.debug(f'Satellite M_gas = {M_gas:.1e} Msun')
 
         # simple ram pressure calculations: calculate rho_CGM from spherical density profile
         pynbody.analysis.halo.center(host)
@@ -90,9 +90,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['vel_CGM'] = [v_rel_mag]
         output['rho_CGM'] = [rho_CGM]
         output['Pram'] = [Pram]
-        print(f'\t {sim}-{z0haloid}: Simple v_rel = {v_rel_mag:.1f}')
-        print(f'\t {sim}-{z0haloid}: Simple rho_CGM = {rho_CGM:.1e}')
-        print(f'\t {sim}-{z0haloid}: Simple P_ram = {Pram:.1e}')
+        logger.debug(f'Simple v_rel = {v_rel_mag:.1f}')
+        logger.debug(f'Simple rho_CGM = {rho_CGM:.1e}')
+        logger.debug(f'Simple P_ram = {Pram:.1e}')
 
 
         # advanced ram pressure calculations: calculate rho, vel from cylinder in front of satellite
@@ -100,15 +100,15 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         # below code is adapted from pynbody.analysis.angmom.sideon() 
         # transform the snapshot so that the vector 'vel' points in the +y direction
         top = s
-        print(f'\t {sim}-{z0haloid}: Centering positions')
+        logger.debug(f'Centering positions')
         cen = pynbody.analysis.halo.center(sat, retcen=True)
         tx = pynbody.transformation.inverse_translate(top, cen)
-        print(f'\t {sim}-{z0haloid}: Centering velocities')
+        logger.debug(f'Centering velocities')
         vcen = pynbody.analysis.halo.vel_center(sat, retcen=True) 
         tx = pynbody.transformation.inverse_v_translate(tx, vcen)
         
         # try to get vel from gas particles, but if there are no gas particles, use stars
-        print(f'\t {sim}-{z0haloid}: Getting velocity vector') 
+        logger.debug(f'Getting velocity vector') 
         try:
             vel = np.average(sat.g['vel'], axis=0, weights=sat.g['mass'])
         except ZeroDivisionError:
@@ -117,7 +117,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         vel_host = np.average(host.g['vel'], axis=0, weights=host.g['mass']) 
         vel -= vel_host
 
-        print(f'\t {sim}-{z0haloid}: Transforming snapshot')
+        logger.debug(f'Transforming snapshot')
         trans = vec_to_xform(vel)
         tx = pynbody.transformation.transform(tx, trans)
         
@@ -127,7 +127,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         center = (0, rvir + height/2, 0)
         wind_filt = pynbody.filt.Disc(radius, height, cen=center)
         env = s[wind_filt].g
-        print(f'\t {sim}-{z0haloid}: Identified {len(env)} gas particles to calculate wind properties')
+        logger.debug(f'Identified {len(env)} gas particles to calculate wind properties')
         output['n_CGM'] = [len(env)]
 
         # try to calculate CGM properties, but if you can't then set rho, vel to 0 (i.e. no gas particles)
@@ -140,7 +140,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
             vel_CGM, rho_CGM = 0, 0
             std_vel_CGM, std_rho_CGM = 0, 0
             
-        Pram = rho_CGM * vel_CGM * vel_CGM # overall units should be Msun kpc**-3 km s**-1
+        Pram = rho_CGM * vel_CGM * vel_CGM # overall units should be Msun kpc**-3 km**2 s**-2
         
         output['vel_CGM_adv'] = [vel_CGM]
         output['rho_CGM_adv'] = [rho_CGM]
@@ -148,9 +148,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['std_rho_CGM'] = [std_rho_CGM]
         output['Pram_adv'] = [Pram]
 
-        print(f'\t {sim}-{z0haloid}: Advanced vel_CGM = {vel_CGM:.2f}')
-        print(f'\t {sim}-{z0haloid}: Advanced rho_CGM = {rho_CGM:.1e}')
-        print(f'\t {sim}-{z0haloid}: Advanced P_ram = {Pram:.1e}')
+        logger.debug(f'Advanced vel_CGM = {vel_CGM:.2f}')
+        logger.debug(f'Advanced rho_CGM = {rho_CGM:.1e}')
+        logger.debug(f'Advanced P_ram = {Pram:.1e}')
 
         # restoring pressure calculations
         # try to center the satellite. if you can't, then that means Prest = 0 (i.e. Mgas=0)
@@ -173,7 +173,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
             dphidz = Vmax**2 / Rmax
             Prest = dphidz * SigmaGas
         
-        print(f'\t {sim}-{z0haloid}:  Prest = {Prest:.1e}')
+        logger.debug(f'Prest = {Prest:.1e}')
 
         output['Prest'] = [Prest]
         output['SigmaGas'] = [SigmaGas]
@@ -193,7 +193,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         star_masses = star_masses[star_ages <= 100]
         star_metals = star_metals[star_ages <= 100]
         star_ages = star_ages[star_ages <= 100]
-        print(f'\t {sim}-{z0haloid}: performing FSPS calculations on {len(star_masses)} star particles (subset of {size} stars)')
+        logger.debug(f'performing FSPS calculations on {len(star_masses)} star particles (subset of {size} stars)')
         
         if len(star_masses)==0:
             SFR = 0
@@ -208,7 +208,7 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
             
         output['SFR'] = [SFR]
         output['sSFR'] = [SFR/M_star]
-        print(f'\t {sim}-{z0haloid}: sSFR = {SFR/M_star:.2e} yr**-1')
+        logger.debug(f'sSFR = {SFR/M_star:.2e} yr**-1')
         
         output_tot = pd.concat([output_tot, output])
 
@@ -218,9 +218,26 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
 if __name__ == '__main__':
     sim = str(sys.argv[1])
     z0haloid = int(sys.argv[2])
-    
-    snap_start = get_snap_start(sim,z0haloid)
+
+    if not os.path.exists('./logs/'):
+        os.mkdir('./logs/')
+    logging.basicConfig(filename=f'./logs/{sim}_{z0haloid}.log', 
+                        format='%(asctime)s :: %(name)s :: %(levelname)-8s :: %(message)s', 
+                        datefmt='%m/%d/%Y %I:%M:%S %p',
+                        level=logging.DEBUG)
+    logger = logging.getLogger('RamPressure')
+
+    logger.debug(f'--------------------------------------------------------------')
+    logger.debug(f'Beginning ram pressure calculations for {sim}-{z0haloid}')
+    # in order: debug, info, warning, error
+
+    logger.debug('Getting stored filepaths and haloids')
     filepaths, haloids, h1ids = get_stored_filepaths_haloids(sim,z0haloid)
+    # filepaths starts with z=0 and goes to z=15 or so
+
+    logger.debug('Getting starting snapshot (may take a while)')
+    snap_start = get_snap_start(sim,z0haloid)
+    logger.debug(f'Start on snapshot {snap_start}, {filepaths[snap_start][-4:]}')
 
     # fix the case where the satellite doesn't have merger info prior to 
     if len(haloids) < snap_start:
@@ -233,7 +250,9 @@ if __name__ == '__main__':
         h1ids = np.flip(h1ids[:snap_start+1])
 
     output_tot = calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids)
-    output_tot.to_hdf('../../Data/ram_pressure.hdf5',key=f'{sim}_{z0haloid}')
+    savepath = '../../Data/ram_pressure.hdf5'
+    logger.debug(f'Saving output to {savepath}')
+    output_tot.to_hdf(savepath,key=f'{sim}_{z0haloid}')
 
 
 
