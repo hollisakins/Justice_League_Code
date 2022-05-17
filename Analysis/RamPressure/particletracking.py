@@ -270,7 +270,7 @@ if __name__ == '__main__':
         haloids = np.flip(haloids[:snap_start+1])
         h1ids = np.flip(h1ids[:snap_start+1])
 
-    if len(haloids) > snap_start:
+    if len(haloids) == snap_start:
         filepaths = np.flip(filepaths[:snap_start])
         haloids = np.flip(haloids[:snap_start])
         h1ids = np.flip(h1ids[:snap_start])   
