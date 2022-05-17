@@ -244,10 +244,15 @@ if __name__ == '__main__':
         snap_start = len(haloids)
         raise Exception('Careful! You may have an error since the satellite doesnt have mergertree info out to the time where you want to start. This case is untested')
     
-    if len(haloids) >= snap_start:
+    if len(haloids) > snap_start:
         filepaths = np.flip(filepaths[:snap_start+1])
         haloids = np.flip(haloids[:snap_start+1])
         h1ids = np.flip(h1ids[:snap_start+1])
+
+    if len(haloids) > snap_start:
+        filepaths = np.flip(filepaths[:snap_start])
+        haloids = np.flip(haloids[:snap_start])
+        h1ids = np.flip(h1ids[:snap_start])   
 
     output_tot = calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids)
     savepath = '../../Data/ram_pressure.hdf5'

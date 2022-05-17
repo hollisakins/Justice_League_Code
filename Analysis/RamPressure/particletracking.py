@@ -265,10 +265,15 @@ if __name__ == '__main__':
         snap_start = len(haloids)
         raise Exception('Careful! You may have an error since the satellite doesnt have mergertree info out to the time where you want to start. This case is untested')
     
-    if len(haloids) >= snap_start:
+    if len(haloids) > snap_start:
         filepaths = np.flip(filepaths[:snap_start+1])
         haloids = np.flip(haloids[:snap_start+1])
         h1ids = np.flip(h1ids[:snap_start+1])
+
+    if len(haloids) > snap_start:
+        filepaths = np.flip(filepaths[:snap_start])
+        haloids = np.flip(haloids[:snap_start])
+        h1ids = np.flip(h1ids[:snap_start])   
         
     # filepaths and haloids now go the "right" way, i.e. starts from start_snap and goes until z=0
     assert len(filepaths) == len(haloids)
