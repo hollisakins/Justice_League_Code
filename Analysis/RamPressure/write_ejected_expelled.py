@@ -1,10 +1,10 @@
 from analysis import *
 
-keys = get_keys()
+keys = get_keys(sf=False)
 print(keys)
 print(len(keys))
 
 for key in keys:
     sim = str(key[:4])
     haloid = int(key[5:])
-    expelled, accreted = calc_ejected_expelled(sim, haloid, save=True, verbose=False)
+    expelled, accreted = calc_ejected_expelled(sim, haloid, save=True, verbose=False, check_outflow_time=False)

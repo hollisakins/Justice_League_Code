@@ -9,10 +9,15 @@ import numpy as np
 import pickle
 from base import *
 
-def get_keys():
-    keys = ['h148_10','h148_12','h148_2','h148_23','h148_249','h148_251','h148_27','h148_282','h148_34','h148_38','h148_4','h148_55','h148_6','h148_65','h148_7','h229_14','h229_18','h229_20','h229_22','h229_49','h242_10','h242_21','h242_30','h242_38','h242_401','h242_69','h242_8','h329_117','h329_29','h329_7']
+def get_keys(sf):
+    if sf:
+        keys = ['h148_10','h148_12','h148_2','h148_249','h148_251','h148_27','h148_282','h148_34','h148_38','h148_4','h148_55','h148_6','h148_65','h148_7','h229_14','h229_18','h229_20','h229_22','h229_49','h242_10','h242_21','h242_38','h242_69','h242_8','h329_117','h329_29','h329_7']
+    else:
+        keys = ['h148_12','h148_249','h148_251','h148_27','h148_282','h148_34','h148_38','h148_55','h148_65','h229_14','h229_18','h229_20','h229_22','h229_49','h242_21','h242_38','h242_69','h329_117','h329_29']
     return keys
 
+
+data_path = '/data/Justice League/'
 
 
 
@@ -24,7 +29,7 @@ def read_tracked_particles(sim, haloid, verbose=False):
     key = f'{sim}_{str(int(haloid))}'
 
     # import the tracked particles dataset
-    path = '../../Data/tracked_particles.hdf5'
+    path = f'{data_path}/tracked_particles.hdf5'
     data = pd.read_hdf(path, key=key)
     
     time = np.unique(data.time)
@@ -163,6 +168,8 @@ def calc_ejected_expelled(sim, haloid, check_outflow_time=True, save=True, verbo
     if verbose: print(f'Now computing expelled particles for {sim}-{haloid}...')
     expelled = pd.DataFrame()
     accreted = pd.DataFrame()
+    heated = pd.DataFrame()
+    cooled = pd.DataFrame()
     
     pids = np.unique(data.pid)
     for pid in tqdm.tqdm(pids):
@@ -189,6 +196,7 @@ def calc_ejected_expelled(sim, haloid, check_outflow_time=True, save=True, verbo
                 else:
                     check = outside_sat[i]
                     
+                ### expelled particles: go from anywhere in the satellite to anywhere outside of the satellite 
                 if in_sat[i-1] and check:
                     out = dat[time==t2].copy()
                     if sat_halo[i-1]:
@@ -197,7 +205,13 @@ def calc_ejected_expelled(sim, haloid, check_outflow_time=True, save=True, verbo
                         out['state1'] = 'sat_disk'
                         
                     expelled = pd.concat([expelled, out])
-                    
+                
+                ### heated particles: go from the disk to the halo
+                if sat_disk[i-1] and sat_halo[i]:
+                    out = dat[time==t2].copy()    
+                    heated = pd.concat([heated, out])
+
+                ### accreted particles: go from anywhere outside of the satellite to anywhere inside the satellite    
                 if outside_sat[i-1] and in_sat[i]:
                     out = dat[time==t2].copy()
                     if sat_halo[i]:
@@ -206,6 +220,12 @@ def calc_ejected_expelled(sim, haloid, check_outflow_time=True, save=True, verbo
                         out['state2'] = 'sat_disk'
                         
                     accreted = pd.concat([accreted, out])
+                
+                ### cooled particles: go from the halo to the disk
+                if sat_halo[i-1] and sat_disk[i]:
+                    out = dat[time==t2].copy()    
+                    cooled = pd.concat([cooled, out])
+                    
 
     print('Calculating ejection angles')
     print('Calculating expulsion angles')
@@ -214,18 +234,22 @@ def calc_ejected_expelled(sim, haloid, check_outflow_time=True, save=True, verbo
     if save:
         key = f'{sim}_{str(int(haloid))}'
         if check_outflow_time:
-            filepath = '../../Data/expelled_particles.hdf5'
+            filepath = f'{data_path}/expelled_particles.hdf5'
         else:
-            filepath = '../../Data/expelled_particles_no1Gyr.hdf5'
+            filepath = f'{data_path}/expelled_particles_no1Gyr.hdf5'
         print(f'Saving {key} expelled particle dataset to {filepath}')
         expelled.to_hdf(filepath, key=key)
         if check_outflow_time:        
-            filepath = '../../Data/accreted_particles.hdf5'
+            filepath = f'{data_path}/accreted_particles.hdf5'
         else:
-            filepath = '../../Data/accreted_particles_no1Gyr.hdf5'
+            filepath = f'{data_path}/accreted_particles_no1Gyr.hdf5'
         print(f'Saving {key} accreted particle dataset to {filepath}')
         accreted.to_hdf(filepath, key=key)
         
+        filepath = f'{data_path}/heated_particles.hdf5'
+        heated.to_hdf(filepath, key=key)
+        filepath = f'{data_path}/cooled_particles.hdf5'
+        cooled.to_hdf(filepath, key=key)
         
     print(f'Returning (expelled, accreted) datasets...')
 
@@ -234,25 +258,25 @@ def calc_ejected_expelled(sim, haloid, check_outflow_time=True, save=True, verbo
 
 def read_ejected_expelled(sim, haloid, suffix=''):
     key = f'{sim}_{str(int(haloid))}'
-    #ejected = pd.read_hdf('../../Data/ejected_particles.hdf5', key=key)
-    #cooled = pd.read_hdf('../../Data/cooled_particles.hdf5', key=key)
-    expelled = pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)
-    accreted = pd.read_hdf('../../Data/accreted_particles.hdf5', key=key)
+    #ejected = pd.read_hdf(f'{data_path}/ejected_particles.hdf5', key=key)
+    #cooled = pd.read_hdf(f'{data_path}/cooled_particles.hdf5', key=key)
+    expelled = pd.read_hdf(f'{data_path}/expelled_particles.hdf5', key=key)
+    accreted = pd.read_hdf(f'{data_path}/accreted_particles.hdf5', key=key)
     print(f'Returning (expelled, accreted) for {sim}-{haloid}...')
     return expelled, accreted
         
     
-def read_all_ejected_expelled():
+def read_all_ejected_expelled(sf=False):
 #     ejected = pd.DataFrame()
 #     cooled = pd.DataFrame()
     expelled = pd.DataFrame()
     accreted = pd.DataFrame()
-    keys = get_keys()
+    keys = get_keys(sf)
     for key in keys:
-        expelled1 = pd.read_hdf('../../Data/expelled_particles.hdf5', key=key)
+        expelled1 = pd.read_hdf(f'{data_path}/expelled_particles.hdf5', key=key)
         expelled1['key'] = key
         expelled = pd.concat([expelled, expelled1])
-        accreted1 = pd.read_hdf('../../Data/accreted_particles.hdf5', key=key)
+        accreted1 = pd.read_hdf(f'{data_path}/accreted_particles.hdf5', key=key)
         accreted1['key'] = key
         accreted = pd.concat([accreted, accreted1])
 
@@ -264,7 +288,7 @@ def read_ram_pressure(sim, haloid, suffix=''):
     rates of gas flow in additiont to ram pressure information.'''
     
     # Load in ram pressure data
-    path = '../../Data/ram_pressure.hdf5'
+    path = f'{data_path}/ram_pressure.hdf5'
     key = f'{sim}_{haloid}'
     data = pd.read_hdf(path, key=key)
     
@@ -308,17 +332,18 @@ def read_ram_pressure(sim, haloid, suffix=''):
     particles['m_SNeaff'] = np.array(particles.mass,dtype=float)*np.array(particles.coolontime > particles.time, dtype=int)
     
     # group the particles data by unique times and sum the mass of particles that are SNe affected, to get total mass
-    data = pd.merge_asof(data, particles.groupby(['time']).m_SNeaff.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, particles.groupby(['time']).m_SNeaff.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'m_SNeaff':'M_SNeaff'})
     
     # group the particles data by unique times and sum the mass of particles that are in the disk, to get total mass
-    data = pd.merge_asof(data, particles.groupby(['time']).m_disk.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, particles.groupby(['time']).m_disk.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'m_disk':'M_disk'})
     
     # analagous to Mgas_div above
     Mdisk_div = np.array(data.M_disk,dtype=float)
     Mdisk_div = np.append(Mdisk_div[0], Mdisk_div[:-1])
     data['Mdisk_div'] = Mdisk_div
+    #data = data.drop(['time'], axis=1)
     
 #     # get rates of heated (ejected) gas
 #     data = pd.merge(data, ejected.groupby(['time']).mass.sum().reset_index(), how='left', left_on='t', right_on='time')
@@ -341,70 +366,81 @@ def read_ram_pressure(sim, haloid, suffix=''):
     expelled_th30_disk = expelled[(expelled.angle <= 30)&(expelled.state1=='sat_disk')]
     expelled_th30_halo = expelled[(expelled.angle <= 30)&(expelled.state1=='sat_halo')]
     
-    data = pd.merge_asof(data, expelled.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'mass':'M_expelled'})
     data['Mdot_expelled'] = data.M_expelled / data.dt
     data['Mdot_expelled_by_Mgas'] = data.Mdot_expelled / Mgas_div
     data['Mdot_expelled_by_Mstar'] = data.Mdot_expelled / Mstar_div
+    data = data.drop(['time'], axis=1)
 
-    data = pd.merge_asof(data, expelled.groupby(['time']).apply(lambda x: np.average(x.angle, weights=x.mass)).reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled.groupby(['time']).apply(lambda x: np.average(x.angle, weights=x.mass)).reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={0:'theta_mean'})
+    data = data.drop(['time'], axis=1)
 
     # gas expelled from the halo
-    data = pd.merge_asof(data, expelled_halo.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled_halo.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'mass':'M_expelled_halo'})
     data['Mdot_expelled_halo'] = data.M_expelled_halo / data.dt
     data['Mdot_expelled_halo_by_Mgas'] = data.Mdot_expelled_halo / Mgas_div
     data['Mdot_expelled_halo_by_Mhalo'] = data.Mdot_expelled_halo / (Mgas_div-Mdisk_div)
+    data = data.drop(['time'], axis=1)
     
-    data = pd.merge_asof(data, expelled_halo.groupby(['time']).apply(lambda x: np.average(x.angle, weights=x.mass)).reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled_halo.groupby(['time']).apply(lambda x: np.average(x.angle, weights=x.mass)).reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={0:'theta_mean_halo'})
+    data = data.drop(['time'], axis=1)
     
     # gas expelled directly from the disk
-    data = pd.merge_asof(data, expelled_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'mass':'M_expelled_disk'})
     data['Mdot_expelled_disk'] = data.M_expelled_disk / data.dt
     data['Mdot_expelled_disk_by_Mgas'] = data.Mdot_expelled_disk / Mgas_div
     data['Mdot_expelled_disk_by_Mdisk'] = data.Mdot_expelled_disk / Mdisk_div
+    data = data.drop(['time'], axis=1)
     
-    data = pd.merge_asof(data, expelled_disk.groupby(['time']).apply(lambda x: np.average(x.angle, weights=x.mass)).reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled_disk.groupby(['time']).apply(lambda x: np.average(x.angle, weights=x.mass)).reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={0:'theta_mean_disk'})
+    data = data.drop(['time'], axis=1)
 
     # gas expelled within an exit angle of 30 degrees
-    data = pd.merge_asof(data, expelled_th30.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled_th30.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'mass':'M_expelled_th30'})
     data['Mdot_expelled_th30'] = data.M_expelled_th30 / data.dt
     data['Mdot_expelled_th30_by_Mgas'] = data.Mdot_expelled_th30 / Mgas_div
+    data = data.drop(['time'], axis=1)
     
     # gas expelled from the disk within an exit angle of 30 degrees 
-    data = pd.merge_asof(data, expelled_th30_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled_th30_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'mass':'M_expelled_th30_disk'})
     data['Mdot_expelled_th30_disk'] = data.M_expelled_th30_disk / data.dt
     data['Mdot_expelled_th30_disk_by_Mdisk'] = data.Mdot_expelled_th30_disk / Mdisk_div
+    data = data.drop(['time'], axis=1)
     
     # gas expelled from the halo within an exit angle of 30 degrees 
-    data = pd.merge_asof(data, expelled_th30_halo.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, expelled_th30_halo.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'mass':'M_expelled_th30_halo'})
     data['Mdot_expelled_th30_halo'] = data.M_expelled_th30_halo / data.dt
     data['Mdot_expelled_th30_halo_by_Mhalo'] = data.Mdot_expelled_th30_halo / (Mgas_div-Mdisk_div)
+    data = data.drop(['time'], axis=1)
     
     
     
     # finally, accreted gas
     accreted_disk = accreted[accreted.state2 == 'sat_disk']
     
-    data = pd.merge_asof(data, accreted.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, accreted.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'mass':'M_accreted'})
     data['Mdot_accreted'] = data.M_accreted / data.dt
     data['Mdot_accreted_by_Mgas'] = data.Mdot_accreted / Mgas_div
     data['Mdot_accreted_by_Mstar'] = data.Mdot_accreted / Mstar_div
+    data = data.drop(['time'], axis=1)
 
     
-    data = pd.merge_asof(data, accreted_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, accreted_disk.groupby(['time']).mass.sum().reset_index(), left_on='t', right_on='time', direction='nearest', tolerance=0)
     data = data.rename(columns={'mass':'M_accreted_disk'})
     data['Mdot_accreted_disk'] = data.M_accreted_disk / data.dt
     data['Mdot_accreted_disk_by_Mgas'] = data.Mdot_accreted_disk / Mgas_div
     data['Mdot_accreted_disk_by_Mdisk'] = data.Mdot_accreted_disk / Mdisk_div
+    data = data.drop(['time'], axis=1)
 
     # overall rate of gas-loss
     dM_gas = np.array(data.M_gas,dtype=float)[1:] - np.array(data.M_gas,dtype=float)[:-1]
@@ -426,7 +462,7 @@ def read_ram_pressure(sim, haloid, suffix=''):
     timesteps = timesteps[['t','z0haloid','x','y','z','mass']]
     timesteps_target = timesteps[timesteps.z0haloid==haloid].reset_index()
     timesteps_target = timesteps_target.sort_values('t')
-    timesteps_target = pd.merge_asof(data, timesteps_target, on='t', tolerance=1, direction='nearest')
+    timesteps_target = pd.merge_asof(data, timesteps_target, on='t', tolerance=0, direction='nearest')
 
 #     FG = np.array([])
 #     for tt in timesteps_target.iterrows():
@@ -449,19 +485,19 @@ def read_ram_pressure(sim, haloid, suffix=''):
 
     df_r = disk_particles.groupby(['time']).r.apply(r_half).reset_index()
     df_m = disk_particles.groupby(['time']).mass.sum().reset_index()
-    df1 = pd.merge_asof(df_r, df_m, on='time', direction='nearest', tolerance=1)
+    df1 = pd.merge_asof(df_r, df_m, on='time', direction='nearest', tolerance=0)
     df1['SigmaDisk'] = np.array(df1.mass / (2*np.pi*df1.r**2))
 
     df_r = sat_particles.groupby(['time']).r.apply(r_half).reset_index()
     df_m = sat_particles.groupby(['time']).mass.sum().reset_index()
-    df2 = pd.merge_asof(df_r, df_m, on='time', direction='nearest', tolerance=1)
+    df2 = pd.merge_asof(df_r, df_m, on='time', direction='nearest', tolerance=0)
     df2['SigmaGas'] = np.array(df2.mass / (2*np.pi*df2.r**2))
     
-    df = pd.merge_asof(df1,df2,on='time', direction='nearest', tolerance=1)
+    df = pd.merge_asof(df1,df2,on='time', direction='nearest', tolerance=0)
     df = df[['time','SigmaDisk','SigmaGas']]
 
 
-    data = pd.merge_asof(data, df, left_on='t', right_on='time', direction='nearest', tolerance=1)
+    data = pd.merge_asof(data, df, left_on='t', right_on='time', direction='nearest', tolerance=0)
     
     p = particles.groupby(['time'])[['sat_Xc','sat_Yc','sat_Zc','host_Xc','host_Yc','host_Zc','hostRvir']].mean().reset_index()
     t = np.array(p.time)
@@ -482,7 +518,11 @@ def read_ram_pressure(sim, haloid, suffix=''):
     d = np.sqrt(x**2+y**2+z**2)/r
     dnew = np.sqrt(xnew**2+ynew**2+znew**2)/rnew
     from scipy.signal import argrelextrema
-    t_1peri = np.min(tnew[argrelextrema(dnew, np.less)])
+    try:
+        t_1peri = np.min(tnew[argrelextrema(dnew, np.less)])
+    except ValueError:
+        t_1peri = tnew[np.argmin(dnew)]
+    
     data['t_1peri'] = t_1peri
     
     
@@ -495,10 +535,10 @@ def r_half(r):
     return np.max(x[y <= 0.5])
     
     
-def read_all_ram_pressure(suffix=''):
+def read_all_ram_pressure(sf=False, suffix=''):
     data_all = pd.DataFrame()
     
-    keys = get_keys()
+    keys = get_keys(sf)
     i = 1
     for key in keys:
         print(i, end=' ')

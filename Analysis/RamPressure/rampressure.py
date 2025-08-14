@@ -1,8 +1,8 @@
-from analysis import *
+# from analysis import *
 from base import *
 import sys
 import os
-import fsps
+# import fsps
 
 # used to align pynbody coordinate system to a specified vector
 def vec_to_xform(vec):
@@ -122,8 +122,9 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         tx = pynbody.transformation.transform(tx, trans)
         
         # define cylinder size and filter out those particles
-        radius = 0.5*rvir
-        height = 0.75 * radius
+        radius = rvir
+        height = np.sqrt(np.sum(vel**2)) * 25 * pynbody.units.Unit('Myr')
+        height = height.in_units('kpc')
         center = (0, rvir + height/2, 0)
         wind_filt = pynbody.filt.Disc(radius, height, cen=center)
         env = s[wind_filt].g
@@ -180,35 +181,35 @@ def calc_ram_pressure(sim, z0haloid, filepaths, haloids, h1ids):
         output['dphidz'] = [dphidz]
     
         
-        # sfr calculations: use FSPS to calculate SFRs from formation masses of stars, not current masses
-        star_masses = np.array(sat.s['mass'].in_units('Msol'),dtype=float)
-        star_metals = np.array(sat.s['metals'], dtype=float)
-        star_ages = np.array(sat.s['age'].in_units('Myr'),dtype=float)
-        size = len(star_ages)
+        # # sfr calculations: use FSPS to calculate SFRs from formation masses of stars, not current masses
+        # star_masses = np.array(sat.s['mass'].in_units('Msol'),dtype=float)
+        # star_metals = np.array(sat.s['metals'], dtype=float)
+        # star_ages = np.array(sat.s['age'].in_units('Myr'),dtype=float)
+        # size = len(star_ages)
         
-        # construct simple stellar population with fsps
-        fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1, imf_type=2, zred=0.0, add_dust_emission=False) 
-        solar_Z = 0.0196
+        # # construct simple stellar population with fsps
+        # fsps_ssp = fsps.StellarPopulation(sfh=0,zcontinuous=1, imf_type=2, zred=0.0, add_dust_emission=False) 
+        # solar_Z = 0.0196
         
-        star_masses = star_masses[star_ages <= 100]
-        star_metals = star_metals[star_ages <= 100]
-        star_ages = star_ages[star_ages <= 100]
-        logger.debug(f'performing FSPS calculations on {len(star_masses)} star particles (subset of {size} stars)')
+        # star_masses = star_masses[star_ages <= 100]
+        # star_metals = star_metals[star_ages <= 100]
+        # star_ages = star_ages[star_ages <= 100]
+        # logger.debug(f'performing FSPS calculations on {len(star_masses)} star particles (subset of {size} stars)')
         
-        if len(star_masses)==0:
-            SFR = 0
-        else:
-            massform = np.array([])
-            for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
-                fsps_ssp.params['logzsol'] = np.log10(metallicity/solar_Z)
-                mass_remaining = fsps_ssp.stellar_mass
-                massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining)) 
+        # if len(star_masses)==0:
+        #     SFR = 0
+        # else:
+        #     massform = np.array([])
+        #     for age, metallicity, mass in zip(star_ages, star_metals, star_masses):
+        #         fsps_ssp.params['logzsol'] = np.log10(metallicity/solar_Z)
+        #         mass_remaining = fsps_ssp.stellar_mass
+        #         massform = np.append(massform, mass / np.interp(np.log10(age*1e9), fsps_ssp.ssp_ages, mass_remaining)) 
 
-            SFR = np.sum(massform)/100e6
+        #     SFR = np.sum(massform)/100e6
             
-        output['SFR'] = [SFR]
-        output['sSFR'] = [SFR/M_star]
-        logger.debug(f'sSFR = {SFR/M_star:.2e} yr**-1')
+        # output['SFR'] = [SFR]
+        # output['sSFR'] = [SFR/M_star]
+        # logger.debug(f'sSFR = {SFR/M_star:.2e} yr**-1')
         
         output_tot = pd.concat([output_tot, output])
 

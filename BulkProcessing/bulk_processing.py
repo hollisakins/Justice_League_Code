@@ -24,7 +24,8 @@ pynbody.config['halo-class-priority'] =  [pynbody.halo.ahf.AHFCatalogue,
                                           pynbody.halo.AmigaGrpCatalogue,
                                           pynbody.halo.legacy.RockstarIntermediateCatalogue,
                                           pynbody.halo.rockstar.RockstarCatalogue,
-                                          pynbody.halo.subfind.SubfindCatalogue, pynbody.halo.hop.HOPCatalogue]
+                                          pynbody.halo.subfind.SubfindCatalogue,
+                                          pynbody.halo.hop.HOPCatalogue]
 
 ####################################################################################################################
 ### codelock below is copied from the pynboady source code
